@@ -20,7 +20,7 @@ static __global__ void acc_f32(const float * x, const float * y, float * dst, co
 
 static void acc_f32_cuda(const float * x, const float * y, float * dst, const int n_elements,
     const int ne10, const int ne11, const int ne12,
-    const int nb1, const int nb2, const int offset, cudaStream_t stream) {
+    const int nb1, const int nb2, const int offset, musaStream_t stream) {
     int num_blocks = (n_elements + CUDA_ACC_BLOCK_SIZE - 1) / CUDA_ACC_BLOCK_SIZE;
     acc_f32<<<num_blocks, CUDA_ACC_BLOCK_SIZE, 0, stream>>>(x, y, dst, n_elements, ne10, ne11, ne12, nb1, nb2, offset);
 }
@@ -31,7 +31,7 @@ void ggml_cuda_op_acc(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
     const float * src0_d = (const float *)src0->data;
     const float * src1_d = (const float *)src1->data;
     float * dst_d = (float *)dst->data;
-    cudaStream_t stream = ctx.stream();
+    musaStream_t stream = ctx.stream();
 
     GGML_ASSERT(src0->type == GGML_TYPE_F32);
     GGML_ASSERT(src1->type == GGML_TYPE_F32);

@@ -9,14 +9,14 @@ static __global__ void arange_f32(float * dst, const int ne0, const float start,
     dst[nidx] = start + step * nidx;
 }
 
-static void arange_f32_cuda(float * dst, const int ne0, const float start, const float step, cudaStream_t stream) {
+static void arange_f32_cuda(float * dst, const int ne0, const float start, const float step, musaStream_t stream) {
     int num_blocks = (ne0 + CUDA_ARANGE_BLOCK_SIZE - 1) / CUDA_ARANGE_BLOCK_SIZE;
     arange_f32<<<num_blocks, CUDA_ARANGE_BLOCK_SIZE, 0, stream>>>(dst, ne0, start,  step);
 }
 
 void ggml_cuda_op_arange(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
     float * dst_d = (float *)dst->data;
-    cudaStream_t stream = ctx.stream();
+    musaStream_t stream = ctx.stream();
 
     GGML_ASSERT(dst->type == GGML_TYPE_F32);
 

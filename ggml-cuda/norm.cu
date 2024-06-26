@@ -131,7 +131,7 @@ static __global__ void rms_norm_f32(const float * x, float * dst, const int ncol
     }
 }
 
-static void norm_f32_cuda(const float * x, float * dst, const int ncols, const int nrows, const float eps, cudaStream_t stream) {
+static void norm_f32_cuda(const float * x, float * dst, const int ncols, const int nrows, const float eps, musaStream_t stream) {
     GGML_ASSERT(ncols % WARP_SIZE == 0);
     if (ncols < 1024) {
         const dim3 block_dims(WARP_SIZE, 1, 1);
@@ -142,7 +142,7 @@ static void norm_f32_cuda(const float * x, float * dst, const int ncols, const i
     }
 }
 
-static void group_norm_f32_cuda(const float * x, float * dst, const int num_groups, const int group_size, const int ne_elements, cudaStream_t stream) {
+static void group_norm_f32_cuda(const float * x, float * dst, const int num_groups, const int group_size, const int ne_elements, musaStream_t stream) {
     static const float eps = 1e-6f;
     if (group_size < 1024) {
         const dim3 block_dims(WARP_SIZE, 1, 1);
@@ -153,7 +153,7 @@ static void group_norm_f32_cuda(const float * x, float * dst, const int num_grou
     }
 }
 
-static void rms_norm_f32_cuda(const float * x, float * dst, const int ncols, const int nrows, const float eps, cudaStream_t stream) {
+static void rms_norm_f32_cuda(const float * x, float * dst, const int ncols, const int nrows, const float eps, musaStream_t stream) {
     GGML_ASSERT(ncols % WARP_SIZE == 0);
     if (ncols < 1024) {
         const dim3 block_dims(WARP_SIZE, 1, 1);
@@ -168,7 +168,7 @@ void ggml_cuda_op_norm(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
     const ggml_tensor * src0 = dst->src[0];
     const float * src0_d = (const float *)src0->data;
     float * dst_d = (float *)dst->data;
-    cudaStream_t stream = ctx.stream();
+    musaStream_t stream = ctx.stream();
 
     GGML_ASSERT(ggml_is_contiguous(src0));
 
@@ -188,7 +188,7 @@ void ggml_cuda_op_group_norm(ggml_backend_cuda_context & ctx, ggml_tensor * dst)
     const ggml_tensor * src0 = dst->src[0];
     const float * src0_d = (const float *)src0->data;
     float * dst_d = (float *)dst->data;
-    cudaStream_t stream = ctx.stream();
+    musaStream_t stream = ctx.stream();
 
     GGML_ASSERT(ggml_is_contiguous(src0));
 
@@ -204,7 +204,7 @@ void ggml_cuda_op_rms_norm(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
     const ggml_tensor * src0 = dst->src[0];
     const float * src0_d = (const float *)src0->data;
     float * dst_d = (float *)dst->data;
-    cudaStream_t stream = ctx.stream();
+    musaStream_t stream = ctx.stream();
 
     GGML_ASSERT(ggml_is_contiguous(src0));
 

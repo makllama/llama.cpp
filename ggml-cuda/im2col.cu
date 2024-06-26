@@ -39,7 +39,7 @@ template <typename T>
 static void im2col_cuda(const float * x, T* dst,
     int64_t IW, int64_t IH, int64_t OW, int64_t OH, int64_t KW, int64_t KH, int64_t IC,
     int64_t batch, int64_t batch_offset, int64_t offset_delta,
-    int s0,int s1,int p0,int p1,int d0,int d1, cudaStream_t stream) {
+    int s0,int s1,int p0,int p1,int d0,int d1, musaStream_t stream) {
     const int parallel_elements = OW * KW * KH;
     const int num_blocks = (parallel_elements + CUDA_IM2COL_BLOCK_SIZE - 1) / CUDA_IM2COL_BLOCK_SIZE;
     dim3 block_nums(num_blocks, OH, batch * IC);
@@ -49,7 +49,7 @@ static void im2col_cuda(const float * x, T* dst,
 static void im2col_cuda_f16(const float * x, half * dst,
     int64_t IW, int64_t IH, int64_t OW, int64_t OH, int64_t KW, int64_t KH, int64_t IC,
     int64_t batch, int64_t batch_offset, int64_t offset_delta,
-    int s0,int s1,int p0,int p1,int d0,int d1, cudaStream_t stream) {
+    int s0,int s1,int p0,int p1,int d0,int d1, musaStream_t stream) {
 
     im2col_cuda<half>(x, dst, IW, IH, OW, OH, KW, KH, IC, batch, batch_offset, offset_delta, s0, s1, p0, p1, d0, d1, stream);
 }
@@ -57,7 +57,7 @@ static void im2col_cuda_f16(const float * x, half * dst,
 static void im2col_cuda_f32(const float * x, float * dst,
     int64_t IW, int64_t IH, int64_t OW, int64_t OH, int64_t KW, int64_t KH, int64_t IC,
     int64_t batch, int64_t batch_offset, int64_t offset_delta,
-    int s0,int s1,int p0,int p1,int d0,int d1, cudaStream_t stream) {
+    int s0,int s1,int p0,int p1,int d0,int d1, musaStream_t stream) {
 
     im2col_cuda<float>(x, dst, IW, IH, OW, OH, KW, KH, IC, batch, batch_offset, offset_delta, s0, s1, p0, p1, d0, d1, stream);
 }
@@ -67,7 +67,7 @@ void ggml_cuda_op_im2col(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
     const ggml_tensor * src1 = dst->src[1];
     const float * src1_d = (const float *)src1->data;
     float * dst_d = (float *)dst->data;
-    cudaStream_t stream = ctx.stream();
+    musaStream_t stream = ctx.stream();
 
     GGML_ASSERT(src0->type == GGML_TYPE_F16);
     GGML_ASSERT(src1->type == GGML_TYPE_F32);

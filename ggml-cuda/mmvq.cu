@@ -126,7 +126,7 @@ static __global__ void mul_mat_vec_q(
 template <ggml_type type>
 static void mul_mat_vec_q_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     GGML_ASSERT(ncols_x % ggml_blck_size(type) == 0);
     GGML_ASSERT(ncols_y <= MMVQ_MAX_BATCH_SIZE);
@@ -197,133 +197,133 @@ static void mul_mat_vec_q_cuda(
 
 static void mul_mat_vec_q4_0_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_Q4_0>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
 
 static void mul_mat_vec_q4_1_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_Q4_1>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
 
 static void mul_mat_vec_q5_0_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_Q5_0>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
 
 static void mul_mat_vec_q5_1_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_Q5_1>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
 
 static void mul_mat_vec_q8_0_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_Q8_0>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
 
 static void mul_mat_vec_q2_K_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_Q2_K>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
 
 static void mul_mat_vec_q3_K_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_Q3_K>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
 
 static void mul_mat_vec_q4_K_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_Q4_K>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
 
 static void mul_mat_vec_q5_K_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_Q5_K>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
 
 static void mul_mat_vec_q6_K_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_Q6_K>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
 
 static void mul_mat_vec_iq2_xxs_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_IQ2_XXS>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
 
 static void mul_mat_vec_iq2_xs_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_IQ2_XS>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
 
 static void mul_mat_vec_iq2_s_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_IQ2_S>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
 
 static void mul_mat_vec_iq3_xxs_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_IQ3_XXS>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
 
 static void mul_mat_vec_iq1_s_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_IQ1_S>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
 
 static void mul_mat_vec_iq1_m_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_IQ1_M>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
 
 static void mul_mat_vec_iq4_nl_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_IQ4_NL>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
 
 static void mul_mat_vec_iq4_xs_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_IQ4_XS>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
 
 static void mul_mat_vec_iq3_s_q8_1_cuda(
     const void * vx, const void * vy, float * dst,
-    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, cudaStream_t stream) {
+    const int ncols_x, const int nrows_x, const int nrows_y, const int ncols_y, const int nrows_dst, musaStream_t stream) {
 
     mul_mat_vec_q_cuda<GGML_TYPE_IQ3_S>(vx, vy, dst, ncols_x, nrows_x, nrows_y, ncols_y, nrows_dst, stream);
 }
@@ -332,7 +332,7 @@ void ggml_cuda_op_mul_mat_vec_q(
     ggml_backend_cuda_context & ctx,
     const ggml_tensor * src0, const ggml_tensor * src1, ggml_tensor * dst, const char * src0_dd_i, const float * src1_ddf_i,
     const char * src1_ddq_i, float * dst_dd_i, const int64_t row_low, const int64_t row_high, const int64_t src1_ncols,
-    const int64_t src1_padded_row_size, cudaStream_t stream) {
+    const int64_t src1_padded_row_size, musaStream_t stream) {
 
     const int64_t ne00 = src0->ne[0];
     const int64_t row_diff = row_high - row_low;

@@ -14,7 +14,7 @@ static __global__ void diag_mask_inf_f32(const float * x, float * dst, const int
     dst[i] = x[i] - (col > n_past + row % rows_per_channel) * FLT_MAX;
 }
 
-static void diag_mask_inf_f32_cuda(const float * x, float * dst, const int ncols_x, const int nrows_x, const int rows_per_channel, const int n_past, cudaStream_t stream) {
+static void diag_mask_inf_f32_cuda(const float * x, float * dst, const int ncols_x, const int nrows_x, const int rows_per_channel, const int n_past, musaStream_t stream) {
     const dim3 block_dims(1, CUDA_DIAG_MASK_INF_BLOCK_SIZE, 1);
     const int block_num_x = (ncols_x + CUDA_DIAG_MASK_INF_BLOCK_SIZE - 1) / CUDA_DIAG_MASK_INF_BLOCK_SIZE;
     const dim3 block_nums(nrows_x, block_num_x, 1);
@@ -25,7 +25,7 @@ void ggml_cuda_op_diag_mask_inf(ggml_backend_cuda_context & ctx, ggml_tensor * d
     const ggml_tensor * src0 = dst->src[0];
     const float * src0_d = (const float *)src0->data;
     float * dst_d = (float *)dst->data;
-    cudaStream_t stream = ctx.stream();
+    musaStream_t stream = ctx.stream();
 
     GGML_ASSERT(src0->type == GGML_TYPE_F32);
     GGML_ASSERT( dst->type == GGML_TYPE_F32);

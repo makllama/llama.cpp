@@ -114,18 +114,18 @@
 #define CUBLAS_STATUS_INTERNAL_ERROR HIPBLAS_STATUS_INTERNAL_ERROR
 #define CUBLAS_STATUS_NOT_SUPPORTED HIPBLAS_STATUS_NOT_SUPPORTED
 #else
-#include <cuda_runtime.h>
-#include <cuda.h>
-#include <cublas_v2.h>
-#include <cuda_fp16.h>
+#include <musa_runtime.h>
+#include <musa.h>
+#include <mublas.h>
+#include <musa_fp16.h>
 
-#if CUDART_VERSION < 11020
-#define CU_DEVICE_ATTRIBUTE_VIRTUAL_MEMORY_MANAGEMENT_SUPPORTED CU_DEVICE_ATTRIBUTE_VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED
-#define CUBLAS_TF32_TENSOR_OP_MATH CUBLAS_TENSOR_OP_MATH
-#define CUBLAS_COMPUTE_16F CUDA_R_16F
-#define CUBLAS_COMPUTE_32F CUDA_R_32F
-#define cublasComputeType_t cudaDataType_t
-#endif // CUDART_VERSION < 11020
+#if MUSART_VERSION < 11020
+#define MU_DEVICE_ATTRIBUTE_VIRTUAL_MEMORY_MANAGEMENT_SUPPORTED MU_DEVICE_ATTRIBUTE_VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED
+#define MUBLAS_TF32_TENSOR_OP_MATH MUBLAS_TENSOR_OP_MATH
+#define MUBLAS_COMPUTE_16F MUSA_R_16F
+#define MUBLAS_COMPUTE_32F MUSA_R_32F
+#define mublasComputeType_t musaDataType_t
+#endif // MUSART_VERSION < 11020
 
 #endif // defined(GGML_USE_HIPBLAS)
 
@@ -165,45 +165,45 @@ void ggml_cuda_error(const char * stmt, const char * func, const char * file, in
         }                                                                           \
     } while (0)
 
-#define CUDA_CHECK(err) CUDA_CHECK_GEN(err, cudaSuccess, cudaGetErrorString)
+#define CUDA_CHECK(err) CUDA_CHECK_GEN(err, musaSuccess, musaGetErrorString)
 
-#if CUDART_VERSION >= 12000
-    static const char * cublas_get_error_str(const cublasStatus_t err) {
-        return cublasGetStatusString(err);
+#if MUSART_VERSION >= 12000
+    static const char * cublas_get_error_str(const mublasStatus_t err) {
+        return mublasGetStatusString(err);
     }
 #else
-    static const char * cublas_get_error_str(const cublasStatus_t err) {
+    static const char * cublas_get_error_str(const mublasStatus_t err) {
         switch (err) {
-            case CUBLAS_STATUS_SUCCESS: return "CUBLAS_STATUS_SUCCESS";
-            case CUBLAS_STATUS_NOT_INITIALIZED: return "CUBLAS_STATUS_NOT_INITIALIZED";
-            case CUBLAS_STATUS_ALLOC_FAILED: return "CUBLAS_STATUS_ALLOC_FAILED";
-            case CUBLAS_STATUS_INVALID_VALUE: return "CUBLAS_STATUS_INVALID_VALUE";
-            case CUBLAS_STATUS_ARCH_MISMATCH: return "CUBLAS_STATUS_ARCH_MISMATCH";
-            case CUBLAS_STATUS_MAPPING_ERROR: return "CUBLAS_STATUS_MAPPING_ERROR";
-            case CUBLAS_STATUS_EXECUTION_FAILED: return "CUBLAS_STATUS_EXECUTION_FAILED";
-            case CUBLAS_STATUS_INTERNAL_ERROR: return "CUBLAS_STATUS_INTERNAL_ERROR";
-            case CUBLAS_STATUS_NOT_SUPPORTED: return "CUBLAS_STATUS_NOT_SUPPORTED";
+            case MUBLAS_STATUS_SUCCESS: return "MUBLAS_STATUS_SUCCESS";
+            case MUBLAS_STATUS_NOT_INITIALIZED: return "MUBLAS_STATUS_NOT_INITIALIZED";
+            case MUBLAS_STATUS_ALLOC_FAILED: return "MUBLAS_STATUS_ALLOC_FAILED";
+            case MUBLAS_STATUS_INVALID_VALUE: return "MUBLAS_STATUS_INVALID_VALUE";
+            case MUBLAS_STATUS_ARCH_MISMATCH: return "MUBLAS_STATUS_ARCH_MISMATCH";
+            case MUBLAS_STATUS_MAPPING_ERROR: return "MUBLAS_STATUS_MAPPING_ERROR";
+            case MUBLAS_STATUS_EXECUTION_FAILED: return "MUBLAS_STATUS_EXECUTION_FAILED";
+            case MUBLAS_STATUS_INTERNAL_ERROR: return "MUBLAS_STATUS_INTERNAL_ERROR";
+            case MUBLAS_STATUS_NOT_SUPPORTED: return "MUBLAS_STATUS_NOT_SUPPORTED";
             default: return "unknown error";
         }
     }
-#endif // CUDART_VERSION >= 12000
+#endif // MUSART_VERSION >= 12000
 
-#define CUBLAS_CHECK(err) CUDA_CHECK_GEN(err, CUBLAS_STATUS_SUCCESS, cublas_get_error_str)
+#define CUBLAS_CHECK(err) CUDA_CHECK_GEN(err, MUBLAS_STATUS_SUCCESS, cublas_get_error_str)
 
 #if !defined(GGML_USE_HIPBLAS)
-static const char * cu_get_error_str(CUresult err) {
+static const char * cu_get_error_str(MUresult err) {
     const char * err_str;
-    cuGetErrorString(err, &err_str);
+    muGetErrorString(err, &err_str);
     return err_str;
 }
-#define CU_CHECK(err) CUDA_CHECK_GEN(err, CUDA_SUCCESS, cu_get_error_str)
+#define CU_CHECK(err) CUDA_CHECK_GEN(err, MUSA_SUCCESS, cu_get_error_str)
 #endif
 
-#if CUDART_VERSION >= 11100
+#if MUSART_VERSION >= 11100
 #define GGML_CUDA_ASSUME(x) __builtin_assume(x)
 #else
 #define GGML_CUDA_ASSUME(x)
-#endif // CUDART_VERSION >= 11100
+#endif // MUSART_VERSION >= 11100
 
 #ifdef GGML_CUDA_F16
 typedef half dfloat; // dequantize float
@@ -214,7 +214,7 @@ typedef float2 dfloat2;
 #endif //GGML_CUDA_F16
 
 #if defined(GGML_USE_HIPBLAS)
-#define __CUDA_ARCH__ 1300
+#define __MUSA_ARCH__ 1300
 
 #if defined(__gfx1100__) || defined(__gfx1101__) || defined(__gfx1102__) || defined(__gfx1103__) || \
     defined(__gfx1150__) || defined(__gfx1151__)
@@ -310,21 +310,21 @@ static __device__ __forceinline__ half2 __shfl_xor(half2 var, int laneMask, int 
 #endif // defined(__HIP_PLATFORM_AMD__) && HIP_VERSION < 50600000
 #endif // defined(GGML_USE_HIPBLAS)
 
-#if (defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) || __CUDA_ARCH__ >= CC_PASCAL
+#if (defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) || __MUSA_ARCH__ >= CC_PASCAL
 #define FP16_AVAILABLE
-#endif // (defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) || __CUDA_ARCH__ >= CC_PASCAL
+#endif // (defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) || __MUSA_ARCH__ >= CC_PASCAL
 
-#if defined(FP16_AVAILABLE) && __CUDA_ARCH__ != 610
+#if defined(FP16_AVAILABLE) && __MUSA_ARCH__ != 610
 #define FAST_FP16_AVAILABLE
-#endif // defined(FP16_AVAILABLE) && __CUDA_ARCH__ != 610
+#endif // defined(FP16_AVAILABLE) && __MUSA_ARCH__ != 610
 
-#if !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) && __CUDA_ARCH__ >= CC_VOLTA
+#if !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) && __MUSA_ARCH__ >= CC_VOLTA
 #define FP16_MMA_AVAILABLE
-#endif // !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) && __CUDA_ARCH__ >= CC_VOLTA
+#endif // !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) && __MUSA_ARCH__ >= CC_VOLTA
 
-#if !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) && __CUDA_ARCH__ >= CC_TURING
+#if !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) && __MUSA_ARCH__ >= CC_TURING
 #define INT8_MMA_AVAILABLE
-#endif // !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) && __CUDA_ARCH__ >= CC_TURING
+#endif // !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) && __MUSA_ARCH__ >= CC_TURING
 
 static constexpr bool fast_fp16_available(const int cc) {
     return cc >= CC_PASCAL && cc != 610;
@@ -347,7 +347,7 @@ static __device__ void no_device_code(
            file_name, line, function_name, arch);
     GGML_UNUSED(arch_list);
 #else
-    printf("%s:%d: ERROR: CUDA kernel %s has no device code compatible with CUDA arch %d. ggml-cuda.cu was compiled for: %s\n",
+    printf("%s:%d: ERROR: CUDA kernel %s has no device code compatible with CUDA arch %d. ggml-musa.mu was compiled for: %s\n",
            file_name, line, function_name, arch, arch_list);
 #endif // defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)
     __trap();
@@ -355,11 +355,11 @@ static __device__ void no_device_code(
     GGML_UNUSED(no_device_code); // suppress unused function warning
 }
 
-#ifdef __CUDA_ARCH__
-#define NO_DEVICE_CODE no_device_code(__FILE__, __LINE__, __FUNCTION__, __CUDA_ARCH__, STRINGIZE(__CUDA_ARCH_LIST__))
+#ifdef __MUSA_ARCH__
+#define NO_DEVICE_CODE no_device_code(__FILE__, __LINE__, __FUNCTION__, __MUSA_ARCH__, STRINGIZE(__CUDA_ARCH_LIST__))
 #else
 #define NO_DEVICE_CODE //GGML_ASSERT(false && "NO_DEVICE_CODE not valid in host code.")
-#endif // __CUDA_ARCH__
+#endif // __MUSA_ARCH__
 
 static __device__ __forceinline__ float warp_reduce_sum(float x) {
 #pragma unroll
@@ -414,11 +414,11 @@ static __device__ __forceinline__ float warp_reduce_max(float x) {
 static __device__ __forceinline__ half ggml_cuda_hmax(const half a, const half b) {
 #ifdef FP16_AVAILABLE
 
-#if !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) && CUDART_VERSION < CUDART_HMAX
+#if !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) && MUSART_VERSION < CUDART_HMAX
     return __float2half(fmaxf(__half2float(a), __half2float(b)));
 #else
     return __hmax(a, b);
-#endif // !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) && CUDART_VERSION < CUDART_HMAX
+#endif // !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) && MUSART_VERSION < CUDART_HMAX
 
 #else
    NO_DEVICE_CODE;
@@ -430,14 +430,14 @@ static __device__ __forceinline__ half ggml_cuda_hmax(const half a, const half b
 static __device__ __forceinline__ half2 ggml_cuda_hmax2(const half2 a, const half2 b) {
 #if !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__))
 
-#if CUDART_VERSION >= CUDART_HMAX
+#if MUSART_VERSION >= CUDART_HMAX
     return __hmax2(a, b);
 #else
     half2 ret;
     reinterpret_cast<half&>(ret.x) = __float2half(fmaxf( __low2float(a),  __low2float(b)));
     reinterpret_cast<half&>(ret.y) = __float2half(fmaxf(__high2float(a), __high2float(b)));
     return ret;
-#endif // CUDART_VERSION >= CUDART_HMAX
+#endif // MUSART_VERSION >= CUDART_HMAX
 
 #else
     GGML_UNUSED(a);
@@ -447,7 +447,7 @@ static __device__ __forceinline__ half2 ggml_cuda_hmax2(const half2 a, const hal
 }
 
 static __device__ __forceinline__ half2 warp_reduce_max(half2 x) {
-#if !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) && __CUDA_ARCH__ >= CC_PASCAL
+#if !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) && __MUSA_ARCH__ >= CC_PASCAL
 #pragma unroll
    for (int mask = 16; mask > 0; mask >>= 1) {
        x = ggml_cuda_hmax2(x, __shfl_xor_sync(0xffffffff, x, mask, 32));
@@ -456,16 +456,16 @@ static __device__ __forceinline__ half2 warp_reduce_max(half2 x) {
 #else
    GGML_UNUSED(x);
    NO_DEVICE_CODE;
-#endif // !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) && __CUDA_ARCH__ >= CC_PASCAL
+#endif // !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) && __MUSA_ARCH__ >= CC_PASCAL
 }
 
-#if CUDART_VERSION < CUDART_HMASK
+#if MUSART_VERSION < CUDART_HMASK
 static __device__ __forceinline__ uint32_t __hgt2_mask(const half2 a, const half2 b) {
     const uint32_t mask_low  = 0x0000FFFF * (float( __low2half(a)) > float( __low2half(b)));
     const uint32_t mask_high = 0xFFFF0000 * (float(__high2half(a)) > float(__high2half(b)));
     return mask_low | mask_high;
 }
-#endif // CUDART_VERSION < 12000
+#endif // MUSART_VERSION < 12000
 
 // TODO: move to ggml-common.h
 static const __device__ int8_t kvalues_iq4nl[16] = {-127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113};
@@ -707,11 +707,11 @@ struct ggml_cuda_pool_alloc {
 
 struct ggml_tensor_extra_gpu {
     void * data_device[GGML_CUDA_MAX_DEVICES]; // 1 pointer for each device for split tensors
-    cudaEvent_t events[GGML_CUDA_MAX_DEVICES][GGML_CUDA_MAX_STREAMS]; // events for synchronizing multiple GPUs
+    musaEvent_t events[GGML_CUDA_MAX_DEVICES][GGML_CUDA_MAX_STREAMS]; // events for synchronizing multiple GPUs
 };
 
 
-#if (CUDART_VERSION >= 12000) && defined(GGML_CUDA_USE_GRAPHS)
+#if (MUSART_VERSION >= 12000) && defined(GGML_CUDA_USE_GRAPHS)
 #define USE_CUDA_GRAPH
 #endif
 
@@ -727,17 +727,17 @@ struct ggml_cuda_graph {
 #ifdef USE_CUDA_GRAPH
     ~ggml_cuda_graph() {
         if (instance != nullptr) {
-            CUDA_CHECK(cudaGraphExecDestroy(instance));
+            CUDA_CHECK(musaGraphExecDestroy(instance));
         }
         if (graph != nullptr) {
-            CUDA_CHECK(cudaGraphDestroy(graph));
+            CUDA_CHECK(musaGraphDestroy(graph));
         }
     }
-    cudaGraph_t graph = nullptr;
-    cudaGraphExec_t instance = nullptr;
+    musaGraph_t graph = nullptr;
+    musaGraphExec_t instance = nullptr;
     size_t num_nodes = 0;
-    std::vector<cudaGraphNode_t> nodes;
-    std::vector<cudaKernelNodeParams> params;
+    std::vector<musaGraphNode_t> nodes;
+    std::vector<musaKernelNodeParams> params;
     bool disable_due_to_gpu_arch = false;
     bool disable_due_to_too_many_updates = false;
     bool disable_due_to_failed_graph_capture = false;
@@ -750,10 +750,10 @@ struct ggml_cuda_graph {
 struct ggml_backend_cuda_context {
     int device;
     std::string name;
-    cudaEvent_t copy_event = nullptr;
+    musaEvent_t copy_event = nullptr;
 
-    cudaStream_t streams[GGML_CUDA_MAX_DEVICES][GGML_CUDA_MAX_STREAMS] = { { nullptr } };
-    cublasHandle_t cublas_handles[GGML_CUDA_MAX_DEVICES] = {nullptr};
+    musaStream_t streams[GGML_CUDA_MAX_DEVICES][GGML_CUDA_MAX_STREAMS] = { { nullptr } };
+    mublasHandle_t cublas_handles[GGML_CUDA_MAX_DEVICES] = {nullptr};
 
     std::unique_ptr<ggml_cuda_graph> cuda_graph;
 
@@ -764,42 +764,42 @@ struct ggml_backend_cuda_context {
 
     ~ggml_backend_cuda_context() {
         if (copy_event != nullptr) {
-            CUDA_CHECK(cudaEventDestroy(copy_event));
+            CUDA_CHECK(musaEventDestroy(copy_event));
         }
         for (int i = 0; i < GGML_CUDA_MAX_DEVICES; ++i) {
             for (int j = 0; j < GGML_CUDA_MAX_STREAMS; ++j) {
                 if (streams[i][j] != nullptr) {
-                    CUDA_CHECK(cudaStreamDestroy(streams[i][j]));
+                    CUDA_CHECK(musaStreamDestroy(streams[i][j]));
                 }
             }
             if (cublas_handles[i] != nullptr) {
-                CUBLAS_CHECK(cublasDestroy(cublas_handles[i]));
+                CUBLAS_CHECK(mublasDestroy(cublas_handles[i]));
             }
         }
     }
 
-    cudaStream_t stream(int device, int stream) {
+    musaStream_t stream(int device, int stream) {
         if (streams[device][stream] == nullptr) {
             ggml_cuda_set_device(device);
-            CUDA_CHECK(cudaStreamCreateWithFlags(&streams[device][stream], cudaStreamNonBlocking));
+            CUDA_CHECK(musaStreamCreateWithFlags(&streams[device][stream], musaStreamNonBlocking));
         }
         return streams[device][stream];
     }
 
-    cudaStream_t stream() {
+    musaStream_t stream() {
         return stream(device, 0);
     }
 
-    cublasHandle_t cublas_handle(int device) {
+    mublasHandle_t cublas_handle(int device) {
         if (cublas_handles[device] == nullptr) {
             ggml_cuda_set_device(device);
-            CUBLAS_CHECK(cublasCreate(&cublas_handles[device]));
-            CUBLAS_CHECK(cublasSetMathMode(cublas_handles[device], CUBLAS_TF32_TENSOR_OP_MATH));
+            CUBLAS_CHECK(mublasCreate(&cublas_handles[device]));
+            CUBLAS_CHECK(mublasSetMathMode(cublas_handles[device], MUBLAS_TF32_TENSOR_OP_MATH));
         }
         return cublas_handles[device];
     }
 
-    cublasHandle_t cublas_handle() {
+    mublasHandle_t cublas_handle() {
         return cublas_handle(device);
     }
 

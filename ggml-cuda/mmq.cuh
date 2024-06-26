@@ -44,16 +44,16 @@ static constexpr __device__ int get_mmq_x_max_device() {
     return 128;
 #else // defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)
 
-#if __CUDA_ARCH__ >= CC_VOLTA
+#if __MUSA_ARCH__ >= CC_VOLTA
 #ifdef GGML_CUDA_FORCE_MMQ
     return MMQ_DP4A_MAX_BATCH_SIZE;
 #else // GGML_CUDA_FORCE_MMQ
     return 128;
 #endif // GGML_CUDA_FORCE_MMQ
-#else // __CUDA_ARCH__ >= CC_VOLTA
+#else // __MUSA_ARCH__ >= CC_VOLTA
 
     return 64;
-#endif // __CUDA_ARCH__ >= CC_VOLTA
+#endif // __MUSA_ARCH__ >= CC_VOLTA
 
 #endif // defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)
 #endif // INT8_MMA_AVAILABLE
@@ -67,11 +67,11 @@ static constexpr __device__ int get_mmq_y_device() {
 #if defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)
     return 128;
 #else
-#if __CUDA_ARCH__ >= CC_VOLTA
+#if __MUSA_ARCH__ >= CC_VOLTA
     return 128;
 #else
     return 64;
-#endif // __CUDA_ARCH__ >= CC_VOLTA
+#endif // __MUSA_ARCH__ >= CC_VOLTA
 #endif // defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)
 }
 
@@ -2263,11 +2263,11 @@ template <ggml_type type, int mmq_x, int nwarps, bool need_check>
     __launch_bounds__(WARP_SIZE*nwarps, 2)
 #endif // defined(RDNA3) || defined(RDNA2)
 #else
-#if __CUDA_ARCH__ >= CC_VOLTA
+#if __MUSA_ARCH__ >= CC_VOLTA
     __launch_bounds__(WARP_SIZE*nwarps, 1)
 #else
     __launch_bounds__(WARP_SIZE*nwarps, 2)
-#endif // __CUDA_ARCH__ >= CC_VOLTA
+#endif // __MUSA_ARCH__ >= CC_VOLTA
 #endif // defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)
 static __global__ void mul_mat_q(
     const char * __restrict__ x, const char * __restrict__ yc, float * __restrict__ dst, float * __restrict__ tmp_fixup,
@@ -2284,7 +2284,7 @@ static __global__ void mul_mat_q(
     constexpr int mmq_y = get_mmq_y_device();
 
     // On AMD or old CUDA the performance with stream-k was worse, use conventional tiling instead:
-#if (defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) || __CUDA_ARCH__ < CC_VOLTA
+#if (defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) || __MUSA_ARCH__ < CC_VOLTA
     {
         constexpr bool fixup = false;
         mul_mat_q_process_tile<type, mmq_x, nwarps, need_check, fixup>
@@ -2292,7 +2292,7 @@ static __global__ void mul_mat_q(
                 blockIdx.x, blockIdx.y, 0, ne00/qk);
         return;
     }
-#endif // (defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) || __CUDA_ARCH__ < CC_VOLTA
+#endif // (defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)) || __MUSA_ARCH__ < CC_VOLTA
 
     const     int64_t blocks_per_ne00 = ne00 / qk;
     constexpr int     blocks_per_warp = WARP_SIZE / qi;
@@ -2436,7 +2436,7 @@ static int mmq_get_shmem(const int mmq_x, const int mmq_y, const int cc) {
 }
 
 template <ggml_type type, int mmq_x>
-static void launch_mul_mat_q(ggml_backend_cuda_context & ctx, const mmq_args & args, cudaStream_t stream) {
+static void launch_mul_mat_q(ggml_backend_cuda_context & ctx, const mmq_args & args, musaStream_t stream) {
     const int id = ggml_cuda_get_device();
     const int cc = ggml_cuda_info().devices[id].cc;
     const int nsm = ggml_cuda_info().devices[id].nsm;
@@ -2449,8 +2449,8 @@ static void launch_mul_mat_q(ggml_backend_cuda_context & ctx, const mmq_args & a
 #if !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__))
     static bool shmem_limit_raised[GGML_CUDA_MAX_DEVICES] = {false};
     if (!shmem_limit_raised[id]) {
-        CUDA_CHECK(cudaFuncSetAttribute(mul_mat_q<type, mmq_x, MMQ_NWARPS, false>, cudaFuncAttributeMaxDynamicSharedMemorySize, shmem));
-        CUDA_CHECK(cudaFuncSetAttribute(mul_mat_q<type, mmq_x, MMQ_NWARPS, true>,  cudaFuncAttributeMaxDynamicSharedMemorySize, shmem));
+        CUDA_CHECK(musaFuncSetAttribute(mul_mat_q<type, mmq_x, MMQ_NWARPS, false>, musaFuncAttributeMaxDynamicSharedMemorySize, shmem));
+        CUDA_CHECK(musaFuncSetAttribute(mul_mat_q<type, mmq_x, MMQ_NWARPS, true>,  musaFuncAttributeMaxDynamicSharedMemorySize, shmem));
         shmem_limit_raised[id] = true;
     }
 #endif // !(defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__))
@@ -2498,7 +2498,7 @@ static void launch_mul_mat_q(ggml_backend_cuda_context & ctx, const mmq_args & a
 }
 
 template <ggml_type type>
-void mul_mat_q_case(ggml_backend_cuda_context & ctx, const mmq_args & args, cudaStream_t stream) {
+void mul_mat_q_case(ggml_backend_cuda_context & ctx, const mmq_args & args, musaStream_t stream) {
     const int id    = ggml_cuda_get_device();
     const int nsm   = ggml_cuda_info().devices[id].nsm;
     const int cc    = ggml_cuda_info().devices[id].cc;
@@ -2586,7 +2586,7 @@ void mul_mat_q_case(ggml_backend_cuda_context & ctx, const mmq_args & args, cuda
 }
 
 #define DECL_MMQ_CASE(type)                                                        \
-    template void mul_mat_q_case<type>(ggml_backend_cuda_context & ctx, const mmq_args & args, cudaStream_t stream) \
+    template void mul_mat_q_case<type>(ggml_backend_cuda_context & ctx, const mmq_args & args, musaStream_t stream) \
 
 extern DECL_MMQ_CASE(GGML_TYPE_Q4_0);
 extern DECL_MMQ_CASE(GGML_TYPE_Q4_1);
@@ -2605,6 +2605,6 @@ void ggml_cuda_op_mul_mat_q(
     ggml_backend_cuda_context & ctx,
     const ggml_tensor * src0, const ggml_tensor * src1, ggml_tensor * dst, const char * src0_dd_i, const float * src1_ddf_i,
     const char * src1_ddq_i, float * dst_dd_i, const int64_t row_low, const int64_t row_high, const int64_t src1_ncols,
-    const int64_t src1_padded_row_size, cudaStream_t stream);
+    const int64_t src1_padded_row_size, musaStream_t stream);
 
 bool ggml_cuda_should_use_mmq(enum ggml_type type, int cc, int64_t ne11);

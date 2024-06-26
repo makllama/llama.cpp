@@ -54,7 +54,7 @@ typedef float (*vec_dot_KQ_f32_t)(
 template<typename T, int D>
 static __device__ __forceinline__ T vec_dot_fattn_vec_KQ_q4_0(
     const char * __restrict__ K_c, const void * __restrict__ Q_v, const int * __restrict__ Q_q8, const void * __restrict__ Q_ds_v) {
-#if __CUDA_ARCH__ >= MIN_CC_DP4A
+#if __MUSA_ARCH__ >= MIN_CC_DP4A
 
     const block_q4_0 * K_q4_0 = (const block_q4_0 *) K_c;
     GGML_UNUSED(Q_v);
@@ -96,13 +96,13 @@ static __device__ __forceinline__ T vec_dot_fattn_vec_KQ_q4_0(
     GGML_UNUSED(Q_q8);
     GGML_UNUSED(Q_ds_v);
     NO_DEVICE_CODE;
-#endif  // __CUDA_ARCH__ >= MIN_CC_DP4A
+#endif  // __MUSA_ARCH__ >= MIN_CC_DP4A
 }
 
 template<typename T, int D>
 static __device__ __forceinline__ T vec_dot_fattn_vec_KQ_q4_1(
     const char * __restrict__ K_c, const void * __restrict__ Q_v, const int * __restrict__ Q_q8, const void * __restrict__ Q_ds_v) {
-#if __CUDA_ARCH__ >= MIN_CC_DP4A
+#if __MUSA_ARCH__ >= MIN_CC_DP4A
 
     const block_q4_1 * K_q4_1 = (const block_q4_1 *) K_c;
     GGML_UNUSED(Q_v);
@@ -148,13 +148,13 @@ static __device__ __forceinline__ T vec_dot_fattn_vec_KQ_q4_1(
     GGML_UNUSED(Q_q8);
     GGML_UNUSED(Q_ds_v);
     NO_DEVICE_CODE;
-#endif  // __CUDA_ARCH__ >= MIN_CC_DP4A
+#endif  // __MUSA_ARCH__ >= MIN_CC_DP4A
 }
 
 template<typename T, int D>
 static __device__ __forceinline__ T vec_dot_fattn_vec_KQ_q5_0(
     const char * __restrict__ K_c, const void * __restrict__ Q_v, const int * __restrict__ Q_q8, const void * __restrict__ Q_ds_v) {
-#if __CUDA_ARCH__ >= MIN_CC_DP4A
+#if __MUSA_ARCH__ >= MIN_CC_DP4A
 
     const block_q5_0 * K_q5_0 = (const block_q5_0 *) K_c;
     GGML_UNUSED(Q_v);
@@ -203,13 +203,13 @@ static __device__ __forceinline__ T vec_dot_fattn_vec_KQ_q5_0(
     GGML_UNUSED(Q_q8);
     GGML_UNUSED(Q_ds_v);
     NO_DEVICE_CODE;
-#endif  // __CUDA_ARCH__ >= MIN_CC_DP4A
+#endif  // __MUSA_ARCH__ >= MIN_CC_DP4A
 }
 
 template<typename T, int D>
 static __device__ __forceinline__ T vec_dot_fattn_vec_KQ_q5_1(
     const char * __restrict__ K_c, const void * __restrict__ Q_v, const int * __restrict__ Q_q8, const void * __restrict__ Q_ds_v) {
-#if __CUDA_ARCH__ >= MIN_CC_DP4A
+#if __MUSA_ARCH__ >= MIN_CC_DP4A
 
     const block_q5_1 * K_q5_1 = (const block_q5_1 *) K_c;
     GGML_UNUSED(Q_v);
@@ -262,13 +262,13 @@ static __device__ __forceinline__ T vec_dot_fattn_vec_KQ_q5_1(
     GGML_UNUSED(Q_q8);
     GGML_UNUSED(Q_ds_v);
     NO_DEVICE_CODE;
-#endif  // __CUDA_ARCH__ >= MIN_CC_DP4A
+#endif  // __MUSA_ARCH__ >= MIN_CC_DP4A
 }
 
 template <typename T, int D>
 static __device__ __forceinline__ T vec_dot_fattn_vec_KQ_q8_0(
     const char * __restrict__ K_c, const void * __restrict__ Q_v, const int * __restrict__ Q_q8, const void * __restrict__ Q_ds_v) {
-#if __CUDA_ARCH__ >= MIN_CC_DP4A
+#if __MUSA_ARCH__ >= MIN_CC_DP4A
 
     const block_q8_0 * K_q8_0 = (const block_q8_0 *) K_c;
     GGML_UNUSED(Q_v);
@@ -303,7 +303,7 @@ static __device__ __forceinline__ T vec_dot_fattn_vec_KQ_q8_0(
     GGML_UNUSED(Q_q8);
     GGML_UNUSED(Q_ds_v);
     NO_DEVICE_CODE;
-#endif  // __CUDA_ARCH__ >= MIN_CC_DP4A
+#endif  // __MUSA_ARCH__ >= MIN_CC_DP4A
 }
 
 template <typename T, int D>
@@ -643,7 +643,7 @@ void launch_fattn(
     GGML_ASSERT(K->ne[1] % FATTN_KQ_STRIDE == 0 && "Incorrect KV cache padding.");
 
     ggml_cuda_pool & pool = ctx.pool();
-    cudaStream_t main_stream = ctx.stream();
+    musaStream_t main_stream = ctx.stream();
 
     ggml_cuda_pool_alloc<half>   K_f16(pool);
     ggml_cuda_pool_alloc<half>   V_f16(pool);
@@ -724,7 +724,7 @@ void launch_fattn(
         nb21, nb22, nb23,
         KQV->ne[0], KQV->ne[1], KQV->ne[2], KQV->ne[3]
     );
-    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(musaGetLastError());
 
     if ((parallel_blocks) == 1) {
         return;
@@ -737,5 +737,5 @@ void launch_fattn(
     flash_attn_combine_results<D, parallel_blocks>
         <<<blocks_num_combine, block_dim_combine, shmem_combine, main_stream>>>
         (dst_tmp.ptr, dst_tmp_meta.ptr, (float *) KQV->data);
-    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(musaGetLastError());
 }

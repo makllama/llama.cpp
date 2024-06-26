@@ -91,7 +91,7 @@ struct bin_bcast_cuda {
     template<typename src0_t, typename src1_t, typename dst_t>
     void operator()(const struct ggml_tensor * src0, const struct ggml_tensor * src1, struct ggml_tensor * dst,
             const src0_t * src0_dd, const src1_t * src1_dd, dst_t * dst_dd,
-            cudaStream_t stream) {
+            musaStream_t stream) {
 
         GGML_TENSOR_BINARY_OP_LOCALS
 
@@ -246,7 +246,7 @@ struct bin_bcast_cuda {
 template<class op>
 static void ggml_cuda_op_bin_bcast(
     const ggml_tensor * src0, const ggml_tensor * src1, ggml_tensor * dst,
-    const void * src0_dd, const void * src1_dd, void * dst_dd, cudaStream_t stream) {
+    const void * src0_dd, const void * src1_dd, void * dst_dd, musaStream_t stream) {
 
     GGML_ASSERT(src1->type == GGML_TYPE_F32);
 

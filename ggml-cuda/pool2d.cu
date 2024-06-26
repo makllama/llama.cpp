@@ -35,7 +35,7 @@ static  __global__ void pool2d_nchw_kernel(
 
     for (int i = bh; i < eh; i += 1) {
         for (int j = bw; j < ew; j += 1) {
-#if __CUDA_ARCH__ >= 350
+#if __MUSA_ARCH__ >= 350
             Ti cur = __ldg(i_ptr + i * iw + j);
 #else
             Ti cur = i_ptr[i * iw + j];
@@ -55,7 +55,7 @@ static void pool2d_nchw_kernel_f32_f32_cuda(
         const int kh, const int kw, const int sh, const int sw,
         const int ph, const int pw, const int parallel_elements,
         const float * src, float * dst, const enum ggml_op_pool op,
-        cudaStream_t stream) {
+        musaStream_t stream) {
 
     const int num_blocks = (parallel_elements + CUDA_POOL2D_BLOCK_SIZE - 1) / CUDA_POOL2D_BLOCK_SIZE;
     dim3 block_nums(num_blocks);
@@ -66,7 +66,7 @@ void ggml_cuda_op_pool2d(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
     const ggml_tensor * src0 = dst->src[0];
     const float * src0_d = (const float *)src0->data;
     float * dst_d = (float *)dst->data;
-    cudaStream_t stream = ctx.stream();
+    musaStream_t stream = ctx.stream();
 
     GGML_ASSERT(src0->type == GGML_TYPE_F32);
     GGML_ASSERT( dst->type == GGML_TYPE_F32);

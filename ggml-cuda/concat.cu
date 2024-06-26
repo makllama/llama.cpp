@@ -79,7 +79,7 @@ static __global__ void concat_f32_dim2(const float * x, const float * y, float *
     }
 }
 
-static void concat_f32_cuda(const float * x, const float * y, float * dst, int ne00, int ne01, int ne02, int ne0, int ne1, int ne2, int dim, cudaStream_t stream) {
+static void concat_f32_cuda(const float * x, const float * y, float * dst, int ne00, int ne01, int ne02, int ne0, int ne1, int ne2, int dim, musaStream_t stream) {
     int num_blocks = (ne0 + CUDA_CONCAT_BLOCK_SIZE - 1) / CUDA_CONCAT_BLOCK_SIZE;
     dim3 gridDim(num_blocks, ne1, ne2);
     if (dim == 0) {
@@ -150,7 +150,7 @@ void ggml_cuda_op_concat(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
     const ggml_tensor * src0 = dst->src[0];
     const ggml_tensor * src1 = dst->src[1];
 
-    cudaStream_t stream = ctx.stream();
+    musaStream_t stream = ctx.stream();
 
     const int32_t dim = ((int32_t *) dst->op_params)[0];
 
@@ -177,8 +177,8 @@ void ggml_cuda_op_concat(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
             const size_t size0 = ggml_nbytes(src0);
             const size_t size1 = ggml_nbytes(src1);
 
-            CUDA_CHECK(cudaMemcpyAsync(dst_d,           src0_d, size0, cudaMemcpyDeviceToDevice, stream));
-            CUDA_CHECK(cudaMemcpyAsync(dst_d + size0/4, src1_d, size1, cudaMemcpyDeviceToDevice, stream));
+            CUDA_CHECK(musaMemcpyAsync(dst_d,           src0_d, size0, musaMemcpyDeviceToDevice, stream));
+            CUDA_CHECK(musaMemcpyAsync(dst_d + size0/4, src1_d, size1, musaMemcpyDeviceToDevice, stream));
         }
     } else {
         dim3 grid_dim(dst->ne[1], dst->ne[2], dst->ne[3]);

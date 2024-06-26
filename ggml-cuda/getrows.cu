@@ -65,7 +65,7 @@ static __global__ void k_get_rows_float(
 
 template<int qk, int qr, dequantize_kernel_t dq>
 static void get_rows_cuda(const ggml_tensor * src0, const ggml_tensor * src1, ggml_tensor * dst,
-                            const void * src0_dd, const int32_t * src1_dd, float * dst_dd, cudaStream_t stream) {
+                            const void * src0_dd, const int32_t * src1_dd, float * dst_dd, musaStream_t stream) {
 
     GGML_TENSOR_BINARY_OP_LOCALS
 
@@ -99,7 +99,7 @@ static void get_rows_cuda(const ggml_tensor * src0, const ggml_tensor * src1, gg
 
 template<typename src0_t>
 static void get_rows_cuda_float(const ggml_tensor * src0, const ggml_tensor * src1, ggml_tensor * dst,
-                                const src0_t * src0_dd, const int32_t * src1_dd, float * dst_dd, cudaStream_t stream) {
+                                const src0_t * src0_dd, const int32_t * src1_dd, float * dst_dd, musaStream_t stream) {
 
     GGML_TENSOR_BINARY_OP_LOCALS
 
@@ -135,7 +135,7 @@ void ggml_cuda_op_get_rows(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
     const float * src0_d = (const float *)src0->data;
     const float * src1_d = (const float *)src1->data;
     float * dst_d = (float *)dst->data;
-    cudaStream_t stream = ctx.stream();
+    musaStream_t stream = ctx.stream();
 
 
     GGML_ASSERT(src1->type == GGML_TYPE_I32);

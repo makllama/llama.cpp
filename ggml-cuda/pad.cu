@@ -27,7 +27,7 @@ static __global__ void pad_f32(const float * x, float * dst, const int ne0, cons
 
 static void pad_f32_cuda(const float * x, float * dst,
     const int ne00, const int ne01, const int ne02, const int ne03,
-    const int ne0, const int ne1, const int ne2, const int ne3, cudaStream_t stream) {
+    const int ne0, const int ne1, const int ne2, const int ne3, musaStream_t stream) {
     int num_blocks = (ne0 + CUDA_PAD_BLOCK_SIZE - 1) / CUDA_PAD_BLOCK_SIZE;
     dim3 gridDim(num_blocks, ne1, ne2*ne3);
     pad_f32<<<gridDim, CUDA_PAD_BLOCK_SIZE, 0, stream>>>(x, dst, ne0, ne00, ne01, ne02, ne03);
@@ -37,7 +37,7 @@ void ggml_cuda_op_pad(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
     const ggml_tensor * src0 = dst->src[0];
     const float * src0_d = (const float *)src0->data;
     float * dst_d = (float *)dst->data;
-    cudaStream_t stream = ctx.stream();
+    musaStream_t stream = ctx.stream();
 
     GGML_ASSERT(src0->type == GGML_TYPE_F32);
     GGML_ASSERT(dst->type == GGML_TYPE_F32);
