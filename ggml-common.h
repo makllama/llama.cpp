@@ -19,7 +19,7 @@ typedef half2 ggml_half2;
 
 #define GGML_COMMON_DECL
 #elif defined(GGML_COMMON_DECL_CUDA)
-#include <cuda_fp16.h>
+#include <musa_fp16.h>
 #include <cstdint>
 
 typedef half  ggml_half;
