@@ -1341,6 +1341,7 @@ static musaError_t ggml_cuda_Memcpy2DPeerAsync(
     void * dst, int dstDevice, size_t dpitch, void * src, int srcDevice, size_t spitch, size_t width, size_t height, musaStream_t stream) {
 
 #if !defined(GGML_USE_HIPBLAS)
+/* XXX: musaMemcpy3DPeerAsync is not available in MUSA
     // musaMemcpy2DAsync may fail with copies between vmm pools of different devices
     musaMemcpy3DPeerParms p = {};
     p.dstDevice = dstDevice;
@@ -1349,6 +1350,10 @@ static musaError_t ggml_cuda_Memcpy2DPeerAsync(
     p.srcPtr = make_musaPitchedPtr(src, spitch, spitch, height);
     p.extent = make_musaExtent(width, height, 1);
     return musaMemcpy3DPeerAsync(&p, stream);
+*/
+    GGML_UNUSED(dstDevice);
+    GGML_UNUSED(srcDevice);
+    return musaMemcpy2DAsync(dst, dpitch, src, spitch, width, height, musaMemcpyDeviceToDevice, stream);
 #else
     // HIP does not support musaMemcpy3DPeerAsync or vmm pools
     GGML_UNUSED(dstDevice);
