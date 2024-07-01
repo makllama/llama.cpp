@@ -121,7 +121,9 @@
 
 #if MUSART_VERSION < 11020
 #define MU_DEVICE_ATTRIBUTE_VIRTUAL_MEMORY_MANAGEMENT_SUPPORTED MU_DEVICE_ATTRIBUTE_VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED
-#define MUBLAS_TF32_TENSOR_OP_MATH MUBLAS_TENSOR_OP_MATH
+// XXX: MUBLAS_TENSOR_OP_MATH is not available in MUSA
+// #define MUBLAS_TF32_TENSOR_OP_MATH MUBLAS_TENSOR_OP_MATH
+#define MUBLAS_TF32_TENSOR_OP_MATH MUBLAS_MATH_MODE_DEFAULT
 #define MUBLAS_COMPUTE_16F MUSA_R_16F
 #define MUBLAS_COMPUTE_32F MUSA_R_32F
 #define mublasComputeType_t musaDataType_t
@@ -167,9 +169,11 @@ void ggml_cuda_error(const char * stmt, const char * func, const char * file, in
 
 #define CUDA_CHECK(err) CUDA_CHECK_GEN(err, musaSuccess, musaGetErrorString)
 
-#if MUSART_VERSION >= 12000
+#if MUSART_VERSION >= 10500
     static const char * cublas_get_error_str(const mublasStatus_t err) {
-        return mublasGetStatusString(err);
+        // XXX: mublasGetStatusString() is not available in MUSA
+        // return mublasGetStatusString(err);
+        return mublasStatus_to_string(err);
     }
 #else
     static const char * cublas_get_error_str(const mublasStatus_t err) {
@@ -186,7 +190,7 @@ void ggml_cuda_error(const char * stmt, const char * func, const char * file, in
             default: return "unknown error";
         }
     }
-#endif // MUSART_VERSION >= 12000
+#endif // MUSART_VERSION >= 10500
 
 #define CUBLAS_CHECK(err) CUDA_CHECK_GEN(err, MUBLAS_STATUS_SUCCESS, cublas_get_error_str)
 
@@ -199,11 +203,11 @@ static const char * cu_get_error_str(MUresult err) {
 #define CU_CHECK(err) CUDA_CHECK_GEN(err, MUSA_SUCCESS, cu_get_error_str)
 #endif
 
-#if MUSART_VERSION >= 11100
+#if MUSART_VERSION >= 10500
 #define GGML_CUDA_ASSUME(x) __builtin_assume(x)
 #else
 #define GGML_CUDA_ASSUME(x)
-#endif // MUSART_VERSION >= 11100
+#endif // MUSART_VERSION >= 10500
 
 #ifdef GGML_CUDA_F16
 typedef half dfloat; // dequantize float
