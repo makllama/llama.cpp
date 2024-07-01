@@ -1826,6 +1826,7 @@ static void ggml_cuda_mul_mat_batched_cublas(ggml_backend_cuda_context & ctx, co
     }
 #else
     if (r2 == 1 && r3 == 1 && ggml_is_contiguous_2(src0) && ggml_is_contiguous_2(src1)) {
+/* XXX: mublasGemmStridedBatchedEx is not available in MUSA
         // there is no broadcast and src0, src1 are contiguous across dims 2, 3
         // use mublasGemmStridedBatchedEx
         CUBLAS_CHECK(
@@ -1837,6 +1838,7 @@ static void ggml_cuda_mul_mat_batched_cublas(ggml_backend_cuda_context & ctx, co
                 ne12*ne13,
                 cu_compute_type,
                 MUBLAS_GEMM_DEFAULT_TENSOR_OP));
+*/
     } else {
         // use mublasGemmBatchedEx
         const int ne23 = ne12*ne13;
@@ -1857,6 +1859,7 @@ static void ggml_cuda_mul_mat_batched_cublas(ggml_backend_cuda_context & ctx, co
                 r2, r3);
         CUDA_CHECK(musaGetLastError());
 
+/* XXX: mublasGemmBatchedEx is not available in MUSA
         CUBLAS_CHECK(
         mublasGemmBatchedEx(ctx.cublas_handle(), MUBLAS_OP_T, MUBLAS_OP_N,
                 ne01, ne11, ne10,
@@ -1866,6 +1869,7 @@ static void ggml_cuda_mul_mat_batched_cublas(ggml_backend_cuda_context & ctx, co
                 ne23,
                 cu_compute_type,
                 MUBLAS_GEMM_DEFAULT_TENSOR_OP));
+*/
     }
 #endif
 
@@ -3000,7 +3004,7 @@ GGML_CALL bool ggml_backend_cuda_register_host_buffer(void * buffer, size_t size
         return false;
     }
 
-#if MUSART_VERSION >= 11100
+#if MUSART_VERSION >= 10500
     musaError_t err = musaHostRegister(buffer, size, musaHostRegisterPortable | musaHostRegisterReadOnly);
     if (err != musaSuccess) {
         // clear the error
