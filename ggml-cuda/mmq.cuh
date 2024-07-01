@@ -7,6 +7,30 @@
 #include <climits>
 #include <cstdint>
 
+__device__ uint32_t saturating_subtract(uint32_t a, uint32_t b) {
+    uint32_t result = 0;
+    for (int i = 0; i < 32; i += 8) {
+        // Extract bytes as signed 8-bit integers for signed arithmetic
+        int8_t byte_a = (a >> i) & 0xFF;
+        int8_t byte_b = (b >> i) & 0xFF;
+
+        // Perform signed subtraction, using int16_t to avoid overflow
+        int16_t diff = static_cast<int16_t>(byte_a) - static_cast<int16_t>(byte_b);
+
+        // Apply saturation within the INT8 range
+        if (diff > INT8_MAX) diff = INT8_MAX;
+        else if (diff < INT8_MIN) diff = INT8_MIN;
+
+        // Cast to uint32_t and mask with 0xFF to avoid sign extension, then reassemble
+        result |= (static_cast<uint32_t>(diff) & 0xFF) << i;
+    }
+    return result;
+}
+
+__device__ unsigned int vsubss4(unsigned int __a, unsigned int __b) {
+    return saturating_subtract(__a, __b);
+}
+
 #define MMQ_DP4A_MAX_BATCH_SIZE 64 // Max. batch size to use for dp4a MMQ kernels when FP16 tensor cores are available.
 
 typedef void (*load_tiles_mmq_t)(const char * __restrict__ x, int * x_tile, const int & kbx0, const int & i_max, const int & stride);
@@ -513,14 +537,16 @@ template <int mmq_y, int nwarps, bool need_check> static __device__ __forceinlin
         qs0    |= (qh << 11)   & 0x00001000;  // 1 -> 12
         qs0    |= (qh << 18)   & 0x00100000;  // 2 -> 20
         qs0    |= (qh << 25)   & 0x10000000;  // 3 -> 28
-        qs0     = __vsubss4(qs0, 0x10101010); // subtract 16
+        // qs0     = __vsubss4(qs0, 0x10101010); // subtract 16
+        qs0     = vsubss4(qs0, 0x10101010); // subtract 16
 
         int qs1 = (ql >>  4)   & 0x0F0F0F0F;
         qs1    |= (qh >> 12)   & 0x00000010;  // 16 ->  4
         qs1    |= (qh >>  5)   & 0x00001000;  // 17 -> 12
         qs1    |= (qh <<  2)   & 0x00100000;  // 18 -> 20
         qs1    |= (qh <<  9)   & 0x10000000;  // 19 -> 28
-        qs1     = __vsubss4(qs1, 0x10101010); // subtract 16
+        // qs1     = __vsubss4(qs1, 0x10101010); // subtract 16
+        qs1     = vsubss4(qs1, 0x10101010); // subtract 16
 
 #ifdef INT8_MMA_AVAILABLE
         x_qs[i*MMQ_MMA_TILE_X_K_Q5_0 + kbx*(2*QI5_0) + kqsx + 0]     = qs0;
@@ -1227,7 +1253,8 @@ template <int mmq_y, int nwarps, bool need_check> static __device__ __forceinlin
         const int shift_high = 2 * ksc;
         const int sc_high = ((get_int_from_uint8(bxi->scales, ksc_high) >> shift_high) << 4) & 0x30303030;
 
-        const int sc = __vsubss4(sc_low | sc_high, 0x20202020);
+        // const int sc = __vsubss4(sc_low | sc_high, 0x20202020);
+        const int sc = vsubss4(sc_low | sc_high, 0x20202020);
 
 #ifdef INT8_MMA_AVAILABLE
         x_sc[i*MMQ_MMA_TILE_X_K_Q3_K + threadIdx.x % (WARP_SIZE/4)] = sc;
@@ -1843,8 +1870,10 @@ template <int mmq_y, int nwarps, bool need_check> static __device__ __forceinlin
         x_qs[i*MMQ_MMA_TILE_X_K_Q6_K + kq0] = __vsubss4(ql0 | qh0, 0x20202020);
         x_qs[i*MMQ_MMA_TILE_X_K_Q6_K + kq1] = __vsubss4(ql1 | qh1, 0x20202020);
 #else
-        x_qs[i*(2*WARP_SIZE + 1)     + kq0] = __vsubss4(ql0 | qh0, 0x20202020);
-        x_qs[i*(2*WARP_SIZE + 1)     + kq1] = __vsubss4(ql1 | qh1, 0x20202020);
+        // x_qs[i*(2*WARP_SIZE + 1)     + kq0] = __vsubss4(ql0 | qh0, 0x20202020);
+        // x_qs[i*(2*WARP_SIZE + 1)     + kq1] = __vsubss4(ql1 | qh1, 0x20202020);
+        x_qs[i*(2*WARP_SIZE + 1)     + kq0] = vsubss4(ql0 | qh0, 0x20202020);
+        x_qs[i*(2*WARP_SIZE + 1)     + kq1] = vsubss4(ql1 | qh1, 0x20202020);
 #endif // INT8_MMA_AVAILABLE
     }
 
