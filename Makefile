@@ -446,6 +446,13 @@ ifndef LLAMA_NO_ACCELERATE
 	endif
 endif # LLAMA_NO_ACCELERATE
 
+ifdef LLAMA_MUSA
+	CC := clang
+	CXX := clang++
+	LLAMA_CUDA := 1
+	LLAMA_NO_OPENMP := 1
+endif
+
 ifndef LLAMA_NO_OPENMP
 	MK_CPPFLAGS += -DGGML_USE_OPENMP
 	MK_CFLAGS   += -fopenmp
@@ -498,23 +505,28 @@ else
 endif # LLAMA_CUDA_FA_ALL_QUANTS
 
 ifdef LLAMA_CUDA
-	ifneq ('', '$(wildcard /opt/cuda)')
-		CUDA_PATH ?= /opt/cuda
+	ifneq ('', '$(wildcard /opt/musa)')
+		CUDA_PATH ?= /opt/musa
 	else
-		CUDA_PATH ?= /usr/local/cuda
+		CUDA_PATH ?= /usr/local/musa
 	endif
-	MK_CPPFLAGS  += -DGGML_USE_CUDA -I$(CUDA_PATH)/include -I$(CUDA_PATH)/targets/$(UNAME_M)-linux/include -DGGML_CUDA_USE_GRAPHS
-	MK_LDFLAGS   += -lcuda -lcublas -lculibos -lcudart -lcublasLt -lpthread -ldl -lrt -L$(CUDA_PATH)/lib64 -L/usr/lib64 -L$(CUDA_PATH)/targets/$(UNAME_M)-linux/lib -L$(CUDA_PATH)/lib64/stubs -L/usr/lib/wsl/lib
+	# XXX: Removed flags: -I$(CUDA_PATH)/targets/$(UNAME_M)-linux/include
+	MK_CPPFLAGS  += -DGGML_USE_CUDA -I$(CUDA_PATH)/include -DGGML_CUDA_USE_GRAPHS
+	# XXX: Removed flags: -lculibos -lmublasLt -L$(CUDA_PATH)/targets/$(UNAME_M)-linux/lib -L$(CUDA_PATH)/lib64/stubs -L/usr/lib/wsl/lib
+	MK_LDFLAGS   += -lmusa -lmublas -lmusart -lpthread -ldl -lrt -L$(CUDA_PATH)/lib -L/usr/lib64
 	OBJS         += ggml-cuda.o
 	OBJS         += $(patsubst %.cu,%.o,$(wildcard ggml-cuda/*.cu))
 	OBJS         += $(OBJS_CUDA_TEMP_INST)
-	MK_NVCCFLAGS += -use_fast_math
+	# XXX: Removed flags: -use_fast_math
+	MK_NVCCFLAGS += -x musa -mtgpu --cuda-gpu-arch=mp_22
 ifdef LLAMA_FATAL_WARNINGS
 	MK_NVCCFLAGS += -Werror all-warnings
 endif # LLAMA_FATAL_WARNINGS
+ifndef LLAMA_MUSA
 ifndef JETSON_EOL_MODULE_DETECT
 	MK_NVCCFLAGS += --forward-unknown-to-host-compiler
 endif # JETSON_EOL_MODULE_DETECT
+endif # LLAMA_MUSA
 ifdef LLAMA_DEBUG
 	MK_NVCCFLAGS += -lineinfo
 endif # LLAMA_DEBUG
@@ -524,7 +536,7 @@ endif # LLAMA_CUDA_DEBUG
 ifdef LLAMA_CUDA_NVCC
 	NVCC = $(CCACHE) $(LLAMA_CUDA_NVCC)
 else
-	NVCC = $(CCACHE) nvcc
+	NVCC = $(CCACHE) mcc
 endif #LLAMA_CUDA_NVCC
 ifdef CUDA_DOCKER_ARCH
 	MK_NVCCFLAGS += -Wno-deprecated-gpu-targets -arch=$(CUDA_DOCKER_ARCH)
@@ -584,7 +596,8 @@ define NVCC_COMPILE
 endef # NVCC_COMPILE
 else
 define NVCC_COMPILE
-	$(NVCC) $(NVCCFLAGS) $(CPPFLAGS) -Xcompiler "$(CUDA_CXXFLAGS)" -c $< -o $@
+	# XXX: Removed flags: -Xcompiler "$(CUDA_CXXFLAGS)"
+	$(NVCC) $(NVCCFLAGS) $(CPPFLAGS) -c $< -o $@
 endef # NVCC_COMPILE
 endif # JETSON_EOL_MODULE_DETECT
 
@@ -758,6 +771,7 @@ $(info I CXX:       $(shell $(CXX)  --version | head -n 1))
 ifdef LLAMA_CUDA
 $(info I NVCC:      $(shell $(NVCC) --version | tail -n 1))
 CUDA_VERSION := $(shell $(NVCC) --version | grep -oP 'release (\K[0-9]+\.[0-9])')
+ifndef LLAMA_MUSA
 ifeq ($(shell awk -v "v=$(CUDA_VERSION)" 'BEGIN { print (v < 11.7) }'),1)
 ifndef CUDA_DOCKER_ARCH
 ifndef CUDA_POWER_ARCH
@@ -765,6 +779,7 @@ $(error I ERROR: For CUDA versions < 11.7 a target CUDA architecture must be exp
 endif # CUDA_POWER_ARCH
 endif # CUDA_DOCKER_ARCH
 endif # eq ($(shell echo "$(CUDA_VERSION) < 11.7" | bc),1)
+endif # LLAMA_MUSA
 endif # LLAMA_CUDA
 $(info )
 

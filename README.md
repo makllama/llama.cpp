@@ -487,6 +487,13 @@ Building the program with BLAS support may lead to some performance improvements
 
   Check [Optimizing and Running LLaMA2 on Intel® CPU](https://www.intel.com/content/www/us/en/content-details/791610/optimizing-and-running-llama2-on-intel-cpu.html) for more information.
 
+- #### MUSA
+
+  - Using `make`:
+    ```bash
+    make LLAMA_MUSA=1
+    ```
+
 - #### CUDA
 
   This provides GPU acceleration using the CUDA cores of your Nvidia GPU. Make sure to have the CUDA toolkit installed. You can download it from your Linux distro's package manager (e.g. `apt install nvidia-cuda-toolkit`) or from here: [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads).
