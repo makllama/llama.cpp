@@ -100,6 +100,7 @@ set(LLAMA_BLAS_VENDOR ${LLAMA_BLAS_VENDOR_DEFAULT} CACHE STRING
                                              "llama: BLAS library vendor")
 option(LLAMA_LLAMAFILE                       "llama: use llamafile SGEMM"                       ${LLAMA_LLAMAFILE_DEFAULT})
 option(LLAMA_CUDA                            "llama: use CUDA"                                  OFF)
+option(LLAMA_MUSA                            "llama: use MUSA"                                  OFF)
 option(LLAMA_CUBLAS                          "llama: use CUDA (deprecated, use LLAMA_CUDA)"     OFF)
 option(LLAMA_CUDA_FORCE_DMMV                 "llama: use dmmv instead of mmvq CUDA kernels"     OFF)
 option(LLAMA_CUDA_FORCE_MMQ                  "llama: always use mmq kernels instead of cuBLAS"  OFF)
@@ -152,6 +153,13 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/scripts/build-info.cmake)
 # Compile flags
 #
 
+if (LLAMA_MUSA)
+    set(CMAKE_C_COMPILER clang)
+    set(CMAKE_CXX_COMPILER clang++)
+    set(LLAMA_CUDA ON)
+    set(LLAMA_OPENMP OFF)
+endif()
+
 if (LLAMA_SYCL)
     set(CMAKE_CXX_STANDARD 17)
 else()
@@ -160,6 +168,9 @@ endif()
 
 set(CMAKE_CXX_STANDARD_REQUIRED true)
 set(CMAKE_C_STANDARD 11)
+# XXX: Disable GNU extensions
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD_REQUIRED true)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
@@ -411,8 +422,9 @@ endif()
 if (LLAMA_CUDA)
     cmake_minimum_required(VERSION 3.18)  # for CMAKE_CUDA_ARCHITECTURES
 
-    find_package(CUDAToolkit)
-    if (CUDAToolkit_FOUND)
+    list(APPEND CMAKE_MODULE_PATH "/usr/local/musa/cmake/")
+    find_package(MUSAToolkit)
+    if (MUSAToolkit_FOUND)
         message(STATUS "CUDA found")
 
         if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
@@ -430,7 +442,8 @@ if (LLAMA_CUDA)
         endif()
         message(STATUS "Using CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 
-        enable_language(CUDA)
+        # enable_language(CUDA)
+        set(CMAKE_CUDA_COMPILER ${MUSAToolkit_MCC_EXECUTABLE})
 
         set(GGML_HEADERS_CUDA ggml-cuda.h)
 
@@ -481,21 +494,30 @@ if (LLAMA_CUDA)
             list(APPEND GGML_SOURCES_CUDA ${SRCS})
         endif()
 
+        if (LLAMA_MUSA)
+            set_source_files_properties(${GGML_SOURCES_CUDA} PROPERTIES LANGUAGE CXX)
+            foreach(SOURCE ${GGML_SOURCES_CUDA})
+                set_property(SOURCE ${SOURCE} PROPERTY COMPILE_FLAGS "-x musa -mtgpu --cuda-gpu-arch=mp_22")
+            endforeach()
+        endif()
+
         if (LLAMA_STATIC)
             if (WIN32)
                 # As of 12.3.1 CUDA Toolkit for Windows does not offer a static cublas library
                 set(LLAMA_EXTRA_LIBS ${LLAMA_EXTRA_LIBS} CUDA::cudart_static CUDA::cublas CUDA::cublasLt)
             else ()
-                set(LLAMA_EXTRA_LIBS ${LLAMA_EXTRA_LIBS} CUDA::cudart_static CUDA::cublas_static CUDA::cublasLt_static)
+                # XXX: Removed flags: CUDA::cublasLt_static
+                set(LLAMA_EXTRA_LIBS ${LLAMA_EXTRA_LIBS} MUSA::musart_static MUSA::mublas_static)
             endif()
         else()
-            set(LLAMA_EXTRA_LIBS ${LLAMA_EXTRA_LIBS} CUDA::cudart CUDA::cublas CUDA::cublasLt)
+            # XXX: Removed flags: CUDA::cublasLt
+            set(LLAMA_EXTRA_LIBS ${LLAMA_EXTRA_LIBS} MUSA::musart MUSA::mublas)
         endif()
 
         if (LLAMA_CUDA_NO_VMM)
             # No VMM requested, no need to link directly with the cuda driver lib (libcuda.so)
         else()
-            set(LLAMA_EXTRA_LIBS ${LLAMA_EXTRA_LIBS} CUDA::cuda_driver) # required by cuDeviceGetAttribute(), cuMemGetAllocationGranularity(...), ...
+            set(LLAMA_EXTRA_LIBS ${LLAMA_EXTRA_LIBS} MUSA::musa_driver) # required by muDeviceGetAttribute(), muMemGetAllocationGranularity(...), ...
         endif()
     else()
         message(WARNING "CUDA not found")
@@ -890,8 +912,10 @@ function(get_flags CCID CCVER)
         set(C_FLAGS   -Wdouble-promotion)
         set(CXX_FLAGS -Wno-array-bounds)
 
-        if (CCVER VERSION_GREATER_EQUAL 7.1.0)
-            list(APPEND CXX_FLAGS -Wno-format-truncation)
+        if (NOT LLAMA_MUSA)
+            if (CCVER VERSION_GREATER_EQUAL 7.1.0)
+                list(APPEND CXX_FLAGS -Wno-format-truncation)
+            endif()
         endif()
         if (CCVER VERSION_GREATER_EQUAL 8.1.0)
             list(APPEND CXX_FLAGS -Wextra-semi)
@@ -1189,7 +1213,8 @@ if (LLAMA_CUDA)
     list(APPEND CUDA_CXX_FLAGS ${ARCH_FLAGS})
     list(JOIN CUDA_CXX_FLAGS " " CUDA_CXX_FLAGS_JOINED)  # pass host compiler flags as a single argument
     if (NOT CUDA_CXX_FLAGS_JOINED STREQUAL "")
-        list(APPEND CUDA_FLAGS -Xcompiler ${CUDA_CXX_FLAGS_JOINED})
+        # XXX: Removed flags: -Xcompiler
+        list(APPEND CUDA_FLAGS ${CUDA_CXX_FLAGS_JOINED})
     endif()
     add_compile_options("$<$<COMPILE_LANGUAGE:CUDA>:${CUDA_FLAGS}>")
 endif()

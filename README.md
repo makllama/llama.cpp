@@ -493,6 +493,12 @@ Building the program with BLAS support may lead to some performance improvements
     ```bash
     make LLAMA_MUSA=1
     ```
+  - Using `CMake`:
+
+    ```bash
+    cmake -B build -DLLAMA_MUSA=ON
+    cmake --build build --config Release
+    ```
 
 - #### CUDA
 
