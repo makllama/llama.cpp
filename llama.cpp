@@ -16392,6 +16392,10 @@ struct llama_model_params llama_model_default_params() {
     result.n_gpu_layers = 999;
 #endif
 
+#ifdef GGML_USE_CUDA
+    result.n_gpu_layers = 999;
+#endif
+
     return result;
 }
 
