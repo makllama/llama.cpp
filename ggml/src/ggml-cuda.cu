@@ -1341,7 +1341,7 @@ static void ggml_cuda_set_peer_access(const int n_tokens, int main_device) {
 static cudaError_t ggml_cuda_Memcpy2DPeerAsync(
     void * dst, int dstDevice, size_t dpitch, void * src, int srcDevice, size_t spitch, size_t width, size_t height, cudaStream_t stream) {
 
-#if !defined(GGML_USE_HIPBLAS)
+#if !defined(GGML_USE_HIPBLAS) && !defined(GGML_USE_MUSA)
     // cudaMemcpy2DAsync may fail with copies between vmm pools of different devices
     cudaMemcpy3DPeerParms p = {};
     p.dstDevice = dstDevice;
@@ -1355,7 +1355,7 @@ static cudaError_t ggml_cuda_Memcpy2DPeerAsync(
     GGML_UNUSED(dstDevice);
     GGML_UNUSED(srcDevice);
     return cudaMemcpy2DAsync(dst, dpitch, src, spitch, width, height, cudaMemcpyDeviceToDevice, stream);
-#endif // !defined(GGML_USE_HIPBLAS)
+#endif // !defined(GGML_USE_HIPBLAS) && !defined(GGML_USE_MUSA)
 }
 
 static void ggml_cuda_op_mul_mat(
@@ -1821,6 +1821,9 @@ static void ggml_cuda_mul_mat_batched_cublas(ggml_backend_cuda_context & ctx, co
         }
     }
 #else
+#ifdef GGML_USE_MUSA
+    GGML_ASSERT(false);
+#else // !GGML_USE_MUSA
     if (r2 == 1 && r3 == 1 && ggml_is_contiguous_2(src0) && ggml_is_contiguous_2(src1)) {
         // there is no broadcast and src0, src1 are contiguous across dims 2, 3
         // use cublasGemmStridedBatchedEx
@@ -1863,6 +1866,7 @@ static void ggml_cuda_mul_mat_batched_cublas(ggml_backend_cuda_context & ctx, co
                 cu_compute_type,
                 CUBLAS_GEMM_DEFAULT_TENSOR_OP));
     }
+#endif // GGML_USE_MUSA
 #endif
 
     if (dst->op_params[0] == GGML_PREC_DEFAULT) {
@@ -1902,11 +1906,17 @@ static void ggml_cuda_mul_mat(ggml_backend_cuda_context & ctx, const ggml_tensor
             const int cc            = ggml_cuda_info().devices[id].cc;
             use_mul_mat_q           = use_mul_mat_q           && ggml_cuda_should_use_mmq(src0->type, cc, src1->ne[1]);
             any_gpus_with_slow_fp16 = any_gpus_with_slow_fp16 || !fast_fp16_available(cc);
+#ifdef GGML_USE_MUSA
+            use_mul_mat_vec_q       = false;
+#endif // GGML_USE_MUSA
         }
     } else {
         const int cc            = ggml_cuda_info().devices[ctx.device].cc;
         use_mul_mat_q           = use_mul_mat_q           && ggml_cuda_should_use_mmq(src0->type, cc, src1->ne[1]);
         any_gpus_with_slow_fp16 = any_gpus_with_slow_fp16 || !fast_fp16_available(cc);
+#ifdef GGML_USE_MUSA
+        use_mul_mat_vec_q       = false;
+#endif // GGML_USE_MUSA
     }
 
     // debug helpers
@@ -3019,7 +3029,7 @@ GGML_CALL bool ggml_backend_cuda_register_host_buffer(void * buffer, size_t size
         return false;
     }
 
-#if CUDART_VERSION >= 11100
+#if CUDART_VERSION >= 11100 || defined(GGML_USE_MUSA)
     cudaError_t err = cudaHostRegister(buffer, size, cudaHostRegisterPortable | cudaHostRegisterReadOnly);
     if (err != cudaSuccess) {
         // clear the error
