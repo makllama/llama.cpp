@@ -1169,16 +1169,24 @@ static cudaError_t ggml_cuda_cpy_tensor_2d(
 
     const char * x = src_ptr + i1_low*nb1 + i2*nb2 + i3*nb3;
     if (nb0 == ts && nb1 == ts*ne0/bs) {
+        printf("nb0 == ts && nb1 == ts*ne0/bs\n");
         return cudaMemcpyAsync(dst_ptr, x, i1_diff*nb1, cudaMemcpyDeviceToDevice, stream);
     } else if (nb0 == ts) {
-        return cudaMemcpy2DAsync(dst_ptr, ts*ne0/bs, x, nb1, ts*ne0/bs, i1_diff, cudaMemcpyDeviceToDevice, stream);
+        printf("dst_ptr = %p, x = %p, i1_diff = %ld, nb1 = %ld, ts = %ld, ne0 = %ld, bs = %ld\n", dst_ptr, x, i1_diff, nb1, ts, ne0, bs );
+        cudaError_t r = cudaMemcpy2DAsync(dst_ptr, ts*ne0/bs, x, nb1, ts*ne0/bs, i1_diff, cudaMemcpyDeviceToDevice, stream);
+        if (r != cudaSuccess) {
+            printf("nb0 == ts r = %d\n", r);
+        }
+        return r;
     } else {
+        printf("else\n");
         for (int64_t i1 = 0; i1 < i1_diff; i1++) {
             const void * rx = (const void *) ((const char *) x + i1*nb1);
             void * rd = (void *) (dst_ptr + i1*ts*ne0/bs);
             // pretend the row is a matrix with cols=1
             cudaError_t r = cudaMemcpy2DAsync(rd, ts/bs, rx, nb0, ts/bs, ne0, cudaMemcpyDeviceToDevice, stream);
             if (r != cudaSuccess) {
+                printf("else r = %d\n", r);
                 return r;
             }
         }
@@ -1906,17 +1914,11 @@ static void ggml_cuda_mul_mat(ggml_backend_cuda_context & ctx, const ggml_tensor
             const int cc            = ggml_cuda_info().devices[id].cc;
             use_mul_mat_q           = use_mul_mat_q           && ggml_cuda_should_use_mmq(src0->type, cc, src1->ne[1]);
             any_gpus_with_slow_fp16 = any_gpus_with_slow_fp16 || !fast_fp16_available(cc);
-#ifdef GGML_USE_MUSA
-            use_mul_mat_vec_q       = false;
-#endif // GGML_USE_MUSA
         }
     } else {
         const int cc            = ggml_cuda_info().devices[ctx.device].cc;
         use_mul_mat_q           = use_mul_mat_q           && ggml_cuda_should_use_mmq(src0->type, cc, src1->ne[1]);
         any_gpus_with_slow_fp16 = any_gpus_with_slow_fp16 || !fast_fp16_available(cc);
-#ifdef GGML_USE_MUSA
-        use_mul_mat_vec_q       = false;
-#endif // GGML_USE_MUSA
     }
 
     // debug helpers
