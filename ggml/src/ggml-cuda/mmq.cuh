@@ -945,7 +945,7 @@ static __device__ __forceinline__ void vec_dot_q8_0_16_q8_1_mma(
         }
     }
 #else
-    GGML_UNUSED(x); GGML_UNUSED(y); GGML_UNUSED(sum);
+    GGML_UNUSED(x); GGML_UNUSED(y); GGML_UNUSED(sum); GGML_UNUSED(k00);
     NO_DEVICE_CODE;
 #endif // NEW_MMA_AVAILABLE
 }
@@ -1023,7 +1023,7 @@ static __device__ __forceinline__ void vec_dot_q2_K_q8_1_dp4a(
         y_df[j0/nwarps] = __half22float2(y_ds[j*MMQ_TILE_Y_K]);
     }
 
-#pragma unroll
+// #pragma unroll
     for (int k01 = 0; k01 < WARP_SIZE; k01 += QR2_K*VDR_Q2_K_Q8_1_MMQ) {
         const int k0 = k00 + k01;
 
@@ -1176,7 +1176,7 @@ static __device__ __forceinline__ void vec_dot_q2_K_q8_1_mma(
         }
     }
 #else
-    GGML_UNUSED(x); GGML_UNUSED(y); GGML_UNUSED(sum);
+    GGML_UNUSED(x); GGML_UNUSED(y); GGML_UNUSED(sum); GGML_UNUSED(k00);
     NO_DEVICE_CODE;
 #endif // NEW_MMA_AVAILABLE
 }
@@ -1253,7 +1253,7 @@ template <int mmq_y, int nwarps, bool need_check> static __device__ __forceinlin
         const float d = bxi->d;
 
 #pragma unroll
-        for (int l = 0; l < sizeof(int); ++l) {
+        for (size_t l = 0; l < sizeof(int); ++l) {
             x_df[i*MMQ_MMA_TILE_X_K_Q3_K + sizeof(int)*(threadIdx.x % (WARP_SIZE/8)) + l] = d*sc8[l];
         }
 #else
@@ -1376,7 +1376,7 @@ template <int mmq_y, int nwarps, bool need_check> static __device__ __forceinlin
         const half2 dm = bxi->dm * make_half2(1.0f, -1.0f);
 
 #pragma unroll
-        for (int l = 0; l < sizeof(int); ++l) {
+        for (size_t l = 0; l < sizeof(int); ++l) {
             x_dm[i*MMQ_MMA_TILE_X_K_Q8_1 + sizeof(int)*ksc + l] = dm*make_half2(sc8[l], m8[l]);
         }
     }
@@ -1517,7 +1517,7 @@ template <int mmq_y, int nwarps, bool need_check> static __device__ __forceinlin
         const half2 dm = bxi->dm * make_half2(1.0f, -1.0f);
 
 #pragma unroll
-        for (int l = 0; l < sizeof(int); ++l) {
+        for (size_t l = 0; l < sizeof(int); ++l) {
             x_dm[i*MMQ_MMA_TILE_X_K_Q8_1 + sizeof(int)*ksc + l] = dm*make_half2(sc8[l], m8[l]);
         }
     }
@@ -1810,7 +1810,7 @@ static __device__ __forceinline__ void vec_dot_q6_K_q8_1_mma(
         }
     }
 #else
-    GGML_UNUSED(x); GGML_UNUSED(y); GGML_UNUSED(sum);
+    GGML_UNUSED(x); GGML_UNUSED(y); GGML_UNUSED(sum); GGML_UNUSED(k00);
     NO_DEVICE_CODE;
 #endif // NEW_MMA_AVAILABLE
 }
@@ -2570,6 +2570,8 @@ static __device__ void mul_mat_q_process_tile(
     } else {
         write_back(sum, dst + jt*mmq_x*ne0 + it*mmq_y, ne0, tile_x_max_i, tile_y_max_j);
     }
+
+    GGML_UNUSED(ne00); GGML_UNUSED(ne10);
 }
 
 
@@ -2695,7 +2697,7 @@ static __global__ void mul_mat_q_stream_k_fixup(
         const int it = (kbc_stop - jt*(blocks_per_ne00*nty)) / blocks_per_ne00;
 
         // Skip fixup tile if it's unrelated to the output tile assigned to this CUDA block:
-        if (it != blockIdx.x || jt != blockIdx.y) {
+        if ((unsigned)it != blockIdx.x || (unsigned)jt != blockIdx.y) {
             continue;
         }
 
@@ -2825,7 +2827,6 @@ static void launch_mul_mat_q(ggml_backend_cuda_context & ctx, const mmq_args & a
 template <ggml_type type>
 void mul_mat_q_case(ggml_backend_cuda_context & ctx, const mmq_args & args, cudaStream_t stream) {
     const int id    = ggml_cuda_get_device();
-    const int nsm   = ggml_cuda_info().devices[id].nsm;
     const int cc    = ggml_cuda_info().devices[id].cc;
     const int smpbo = ggml_cuda_info().devices[id].smpbo;
 
