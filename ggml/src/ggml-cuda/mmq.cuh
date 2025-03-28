@@ -1253,7 +1253,7 @@ template <int mmq_y, int nwarps, bool need_check> static __device__ __forceinlin
         const float d = bxi->d;
 
 #pragma unroll
-        for (size_t l = 0; l < sizeof(int); ++l) {
+        for (int l = 0; l < int(sizeof(int)); ++l) {
             x_df[i*MMQ_MMA_TILE_X_K_Q3_K + sizeof(int)*(threadIdx.x % (WARP_SIZE/8)) + l] = d*sc8[l];
         }
 #else
@@ -1376,7 +1376,7 @@ template <int mmq_y, int nwarps, bool need_check> static __device__ __forceinlin
         const half2 dm = bxi->dm * make_half2(1.0f, -1.0f);
 
 #pragma unroll
-        for (size_t l = 0; l < sizeof(int); ++l) {
+        for (int l = 0; l < int(sizeof(int)); ++l) {
             x_dm[i*MMQ_MMA_TILE_X_K_Q8_1 + sizeof(int)*ksc + l] = dm*make_half2(sc8[l], m8[l]);
         }
     }
@@ -1517,7 +1517,7 @@ template <int mmq_y, int nwarps, bool need_check> static __device__ __forceinlin
         const half2 dm = bxi->dm * make_half2(1.0f, -1.0f);
 
 #pragma unroll
-        for (size_t l = 0; l < sizeof(int); ++l) {
+        for (int l = 0; l < int(sizeof(int)); ++l) {
             x_dm[i*MMQ_MMA_TILE_X_K_Q8_1 + sizeof(int)*ksc + l] = dm*make_half2(sc8[l], m8[l]);
         }
     }
