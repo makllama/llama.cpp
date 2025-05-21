@@ -199,9 +199,9 @@ typedef float2 dfloat2;
 #define FP16_AVAILABLE
 #endif // (defined(GGML_USE_HIP) && defined(__HIP_PLATFORM_AMD__)) || __CUDA_ARCH__ >= GGML_CUDA_CC_PASCAL
 
-#if defined(FP16_AVAILABLE) && __CUDA_ARCH__ != GGML_CUDA_CC_DP4A
+#if defined(FP16_AVAILABLE) && __CUDA_ARCH__ != 610
 #define FAST_FP16_AVAILABLE
-#endif // defined(FP16_AVAILABLE) && __CUDA_ARCH__ != GGML_CUDA_CC_DP4A
+#endif // defined(FP16_AVAILABLE) && __CUDA_ARCH__ != 610
 
 #if !(defined(GGML_USE_HIP) && defined(__HIP_PLATFORM_AMD__)) && __CUDA_ARCH__ >= GGML_CUDA_CC_VOLTA
 #define FP16_MMA_AVAILABLE
@@ -232,7 +232,7 @@ static bool fp16_available(const int cc) {
 }
 
 static bool fast_fp16_available(const int cc) {
-    return (GGML_CUDA_CC_IS_NVIDIA(cc) && fp16_available(cc) && cc != GGML_CUDA_CC_DP4A) || GGML_CUDA_CC_IS_AMD(cc);
+    return (GGML_CUDA_CC_IS_NVIDIA(cc) && fp16_available(cc) && cc != 610) || GGML_CUDA_CC_IS_AMD(cc);
 }
 
 // To be used for feature selection of external libraries, e.g. cuBLAS.
