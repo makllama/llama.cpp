@@ -30,15 +30,7 @@ const char* mudnnGetErrorString(mudnn::Status err) {
 }
 
 // Error checking macro for MUDNN calls
-#define MUDNN_CHECK_GEN(err, success, error_fn)                                     \
-    do {                                                                            \
-        auto err_ = (err);                                                          \
-        if (err_ != (success)) {                                                    \
-            ggml_cuda_error(#err, __func__, __FILE__, __LINE__, error_fn(err_));    \
-        }                                                                           \
-    } while (0)
-
-#define MUDNN_CHECK(err) MUDNN_CHECK_GEN(err, mudnn::Status::SUCCESS, mudnnGetErrorString)
+#define MUDNN_CHECK(err) CUDA_CHECK_GEN(err, mudnn::Status::SUCCESS, mudnnGetErrorString)
 
 namespace {
     // Thread-safe cache for mudnn::Handle objects per device
