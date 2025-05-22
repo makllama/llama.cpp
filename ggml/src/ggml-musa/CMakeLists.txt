@@ -80,9 +80,9 @@ if (MUSAToolkit_FOUND)
         add_compile_definitions(GGML_CUDA_FORCE_CUBLAS)
     endif()
 
-    if (GGML_CUDA_NO_VMM)
+    # if (GGML_CUDA_NO_VMM)
         add_compile_definitions(GGML_CUDA_NO_VMM)
-    endif()
+    # endif()
 
     if (NOT GGML_CUDA_FA)
         add_compile_definitions(GGML_CUDA_NO_FA)
