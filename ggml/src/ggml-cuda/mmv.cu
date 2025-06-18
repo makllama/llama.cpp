@@ -19,9 +19,9 @@ static __global__ void mul_mat_vec(
 
     constexpr int warp_size   = ggml_cuda_get_physical_warp_size();
 
-    x   += sample_x  *stride_sample_x   + channel_x  *stride_channel_x   + row*stride_row;
-    y   += sample_y  *stride_sample_y   + channel_y  *stride_channel_y;
-    dst += sample_dst*stride_sample_dst + channel_dst*stride_channel_dst;
+    x   += int64_t(sample_x)  *stride_sample_x   + channel_x  *stride_channel_x   + row*stride_row;
+    y   += int64_t(sample_y)  *stride_sample_y   + channel_y  *stride_channel_y;
+    dst += int64_t(sample_dst)*stride_sample_dst + channel_dst*stride_channel_dst;
 
     const float2 * y2 = (const float2 *) y;
 
