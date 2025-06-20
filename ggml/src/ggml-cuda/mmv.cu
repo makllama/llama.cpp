@@ -46,8 +46,8 @@ static __global__ void mul_mat_vec(
 #pragma unroll
             for (int j = 0; j < ncols_dst; ++j) {
                 const float2 tmpy = y2[j*stride_col_y2 + col2];
-                sumf[j] += tmpx.x*tmpy.x;
-                sumf[j] += tmpx.y*tmpy.y;
+                sumf[j] = __fmaf_rn(tmpx.x, tmpy.x, sumf[j]);
+                sumf[j] = __fmaf_rn(tmpx.y, tmpy.y, sumf[j]);
             }
         }
     } else if constexpr (std::is_same<T, half>::value) {
@@ -60,8 +60,8 @@ static __global__ void mul_mat_vec(
 #pragma unroll
                 for (int j = 0; j < ncols_dst; ++j) {
                     const float2 tmpy = y2[j*stride_col_y2 + col2];
-                    sumf[j] += tmpx.x * tmpy.x;
-                    sumf[j] += tmpx.y * tmpy.y;
+                    sumf[j] = __fmaf_rn(tmpx.x, tmpy.x, sumf[j]);
+                    sumf[j] = __fmaf_rn(tmpx.y, tmpy.y, sumf[j]);
                 }
             }
         } else {
@@ -90,11 +90,13 @@ static __global__ void mul_mat_vec(
         const int * x2 = (const int *) x;
         for (int col2 = tid; col2 < ncols2; col2 += block_size) {
             const int tmpx = x2[col2];
+            const float x_low = float(reinterpret_cast<const nv_bfloat16 *>(&tmpx)[0]);
+            const float x_high = float(reinterpret_cast<const nv_bfloat16 *>(&tmpx)[1]);
 #pragma unroll
             for (int j = 0; j < ncols_dst; ++j) {
                 const float2 tmpy = y2[j*stride_col_y2 + col2];
-                sumf[j] += float(reinterpret_cast<const nv_bfloat16 *>(&tmpx)[0]) * tmpy.x;
-                sumf[j] += float(reinterpret_cast<const nv_bfloat16 *>(&tmpx)[1]) * tmpy.y;
+                sumf[j] = __fmaf_rn(x_low, tmpy.x, sumf[j]);
+                sumf[j] = __fmaf_rn(x_high, tmpy.y, sumf[j]);
             }
         }
     } else {
