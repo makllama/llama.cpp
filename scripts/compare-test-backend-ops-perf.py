@@ -5,13 +5,14 @@ import logging
 import re
 import sys
 from pathlib import Path
+from typing import Tuple, Union
 
 # Set up logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
-def parse_benchmark_line(line: str):
+def parse_benchmark_line(line: str) -> Tuple[Union[str, None], Union[float, None]]:
     """
     Parses a single line of benchmark output.
 
@@ -43,8 +44,10 @@ def parse_benchmark_line(line: str):
         gflops = value * 1000
     elif unit == "MFLOPS":
         gflops = value / 1000
-    else:  # GFLOPS
+    elif unit == "GFLOPS":
         gflops = value
+    else:
+        assert False
 
     return key, gflops
 
