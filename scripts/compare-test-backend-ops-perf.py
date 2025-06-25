@@ -12,18 +12,25 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
-def parse_benchmark_line(line: str) -> Tuple[Union[str, None], Union[float, None]]:
+def parse_benchmark_line(
+    line: str,
+) -> Tuple[Union[str, None], Union[float, None], Union[str, None]]:
     """
     Parses a single line of benchmark output.
 
-    Example line:
+    Example lines:
     MUL_MAT(...): 744 runs - 1660.11 us/run - 134.48 MFLOP/run - 81.01 GFLOPS
+    ADD(...): 98280 runs - 10.87 us/run - 48 kB/run - 4.21 GB/s
 
-    Returns a tuple of (key, gflops) or (None, None) if parsing fails.
+    Returns a tuple of (key, normalized_value, unit_type) or (None, None, None) if parsing fails.
+
+    Performance units:
+    - GFLOPS/TFLOPS/MFLOPS: Floating Point Operations Per Second (normalized to GFLOPS)
+    - GB/s/MB/s/TB/s: Bytes Per Second (normalized to GB/s)
     """
     line = line.strip()
     if ":" not in line:
-        return None, None
+        return None, None, None
 
     key, data_part = line.split(":", 1)
     key = key.strip()
@@ -31,25 +38,45 @@ def parse_benchmark_line(line: str) -> Tuple[Union[str, None], Union[float, None
     # Remove ANSI color codes from the data part
     data_part = re.sub(r"\x1b\[[0-9;]*m", "", data_part)
 
-    # Find the last number and unit in the data part
-    match = re.search(r"([\d\.]+)\s+(GFLOPS|TFLOPS|MFLOPS)\s*$", data_part.strip())
-    if not match:
-        return None, None
+    # Try to match FLOPS units first
+    flops_match = re.search(
+        r"([\d\.]+)\s+(GFLOPS|TFLOPS|MFLOPS)\s*$", data_part.strip()
+    )
+    if flops_match:
+        value_str, unit = flops_match.groups()
+        value = float(value_str)
 
-    value_str, unit = match.groups()
-    value = float(value_str)
+        # Normalize everything to GFLOPS
+        if unit == "TFLOPS":
+            normalized_value = value * 1000
+        elif unit == "MFLOPS":
+            normalized_value = value / 1000
+        elif unit == "GFLOPS":
+            normalized_value = value
+        else:
+            assert False
 
-    # Normalize everything to GFLOPS
-    if unit == "TFLOPS":
-        gflops = value * 1000
-    elif unit == "MFLOPS":
-        gflops = value / 1000
-    elif unit == "GFLOPS":
-        gflops = value
-    else:
-        assert False
+        return key, normalized_value, "GFLOPS"
 
-    return key, gflops
+    # Try to match bandwidth units (GB/s, MB/s, TB/s)
+    bandwidth_match = re.search(r"([\d\.]+)\s+(GB/s|MB/s|TB/s)\s*$", data_part.strip())
+    if bandwidth_match:
+        value_str, unit = bandwidth_match.groups()
+        value = float(value_str)
+
+        # Normalize everything to GB/s
+        if unit == "TB/s":
+            normalized_value = value * 1000
+        elif unit == "MB/s":
+            normalized_value = value / 1000
+        elif unit == "GB/s":
+            normalized_value = value
+        else:
+            assert False
+
+        return key, normalized_value, "GB/s"
+
+    return None, None, None
 
 
 def extract_commit_id(filepath: Path) -> str:
@@ -68,9 +95,9 @@ def load_results(filepath: Path) -> dict:
     try:
         with open(filepath, "r", encoding="utf-8") as f:
             for line in f:
-                key, gflops = parse_benchmark_line(line)
-                if key:
-                    results[key] = gflops
+                key, value, unit_type = parse_benchmark_line(line)
+                if key and value is not None and unit_type:
+                    results[key] = {"value": value, "unit": unit_type}
     except FileNotFoundError:
         logger.error(f"Error: File not found at {filepath}")
         sys.exit(1)
@@ -125,35 +152,54 @@ def main():
 
     all_keys = sorted(list(set(baseline_results.keys()) | set(compare_results.keys())))
 
+    # Determine the unit type from the first available result
+    # Assume all data will be of the same unit type (either all GFLOPS or all GB/s)
+    unit_type = "GFLOPS"  # default
+    for key in all_keys:
+        baseline_data = baseline_results.get(key)
+        compare_data = compare_results.get(key)
+        if baseline_data:
+            unit_type = baseline_data["unit"]
+            break
+        elif compare_data:
+            unit_type = compare_data["unit"]
+            break
+
     comparisons = []
 
     for key in all_keys:
-        baseline_val = baseline_results.get(key)
-        compare_val = compare_results.get(key)
+        baseline_data = baseline_results.get(key)
+        compare_data = compare_results.get(key)
+
+        # Extract values
+        baseline_val = baseline_data["value"] if baseline_data else None
+        compare_val = compare_data["value"] if compare_data else None
+
+        # Calculate change if both values exist
+        change = 0
+        if baseline_val is not None and compare_val is not None:
+            change = ((compare_val - baseline_val) / baseline_val) * 100
 
         entry = {
             "key": key,
             "baseline": baseline_val,
             "compare": compare_val,
-            "change": 0,
+            "change": change,
         }
-
-        if baseline_val is not None and compare_val is not None:
-            entry["change"] = ((compare_val - baseline_val) / baseline_val) * 100
 
         comparisons.append(entry)
 
     # --- Generate Report ---
     with open(args.output, "w", encoding="utf-8") as f:
 
-        # Create header with commit IDs extracted from filenames
-        baseline_header = "Baseline GFLOPS"
-        compare_header = "Compare GFLOPS"
+        # Create header with the determined unit type
+        baseline_header = f"Baseline {unit_type}"
+        compare_header = f"Compare {unit_type}"
 
         if baseline_commit:
-            baseline_header = f"Baseline ({baseline_commit}) GFLOPS"
+            baseline_header = f"Baseline ({baseline_commit}) {unit_type}"
         if compare_commit:
-            compare_header = f"Compare ({compare_commit}) GFLOPS"
+            compare_header = f"Compare ({compare_commit}) {unit_type}"
 
         key_width = max(len(k) for k in all_keys) + 2
         header = f"{'Test Configuration':<{key_width}} {baseline_header:>25} {compare_header:>25} {'Change (%)':>15}"
