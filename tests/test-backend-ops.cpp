@@ -605,7 +605,6 @@ struct console_printer : public printer {
         }
     }
 
-    // Visitor pattern implementations
     void print_operation(const test_operation_info& info) override {
         printf("  %s(%s): ", info.op_name.c_str(), info.op_params.c_str());
         fflush(stdout);
