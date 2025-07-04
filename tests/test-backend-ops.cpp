@@ -352,28 +352,28 @@ struct test_result {
     std::string op_name;
     std::string op_params;
     std::string test_mode;
-    bool supported;
-    bool passed;
+    bool        supported;
+    bool        passed;
     std::string error_message;
-    double time_us;
-    double flops;
-    double bandwidth_gb_s;
-    size_t memory_kb;
-    int n_runs;
+    double      time_us;
+    double      flops;
+    double      bandwidth_gb_s;
+    size_t      memory_kb;
+    int         n_runs;
 
     test_result() {
         // Initialize with default values
-        time_us = 0.0;
-        flops = 0.0;
+        time_us        = 0.0;
+        flops          = 0.0;
         bandwidth_gb_s = 0.0;
-        memory_kb = 0;
-        n_runs = 0;
-        supported = false;
-        passed = false;
+        memory_kb      = 0;
+        n_runs         = 0;
+        supported      = false;
+        passed         = false;
 
         // Set test time
         time_t t = time(NULL);
-        char buf[32];
+        char   buf[32];
         std::strftime(buf, sizeof(buf), "%FT%TZ", gmtime(&t));
         test_time = buf;
 
@@ -381,16 +381,25 @@ struct test_result {
         build_commit = ggml_commit();
     }
 
-    test_result(const std::string& backend_name, const std::string& op_name, const std::string& op_params,
-                const std::string& test_mode, bool supported, bool passed, const std::string& error_message = "",
-                double time_us = 0.0, double flops = 0.0, double bandwidth_gb_s = 0.0,
-                size_t memory_kb = 0, int n_runs = 0)
-        : backend_name(backend_name), op_name(op_name), op_params(op_params), test_mode(test_mode),
-          supported(supported), passed(passed), error_message(error_message), time_us(time_us),
-          flops(flops), bandwidth_gb_s(bandwidth_gb_s), memory_kb(memory_kb), n_runs(n_runs) {
+    test_result(const std::string & backend_name, const std::string & op_name, const std::string & op_params,
+                const std::string & test_mode, bool supported, bool passed, const std::string & error_message = "",
+                double time_us = 0.0, double flops = 0.0, double bandwidth_gb_s = 0.0, size_t memory_kb = 0,
+                int n_runs = 0) :
+        backend_name(backend_name),
+        op_name(op_name),
+        op_params(op_params),
+        test_mode(test_mode),
+        supported(supported),
+        passed(passed),
+        error_message(error_message),
+        time_us(time_us),
+        flops(flops),
+        bandwidth_gb_s(bandwidth_gb_s),
+        memory_kb(memory_kb),
+        n_runs(n_runs) {
         // Set test time
         time_t t = time(NULL);
-        char buf[32];
+        char   buf[32];
         std::strftime(buf, sizeof(buf), "%FT%TZ", gmtime(&t));
         test_time = buf;
 
@@ -400,9 +409,8 @@ struct test_result {
 
     static const std::vector<std::string> & get_fields() {
         static const std::vector<std::string> fields = {
-            "test_time", "build_commit", "backend_name", "op_name", "op_params",
-            "test_mode", "supported", "passed", "error_message", "time_us",
-            "flops", "bandwidth_gb_s", "memory_kb", "n_runs"
+            "test_time", "build_commit",  "backend_name", "op_name", "op_params",      "test_mode", "supported",
+            "passed",    "error_message", "time_us",      "flops",   "bandwidth_gb_s", "memory_kb", "n_runs"
         };
         return fields;
     }
@@ -423,80 +431,79 @@ struct test_result {
     }
 
     std::vector<std::string> get_values() const {
-        return {
-            test_time,
-            build_commit,
-            backend_name,
-            op_name,
-            op_params,
-            test_mode,
-            std::to_string(supported),
-            std::to_string(passed),
-            error_message,
-            std::to_string(time_us),
-            std::to_string(flops),
-            std::to_string(bandwidth_gb_s),
-            std::to_string(memory_kb),
-            std::to_string(n_runs)
-        };
+        return { test_time,
+                 build_commit,
+                 backend_name,
+                 op_name,
+                 op_params,
+                 test_mode,
+                 std::to_string(supported),
+                 std::to_string(passed),
+                 error_message,
+                 std::to_string(time_us),
+                 std::to_string(flops),
+                 std::to_string(bandwidth_gb_s),
+                 std::to_string(memory_kb),
+                 std::to_string(n_runs) };
     }
 };
 
 // Printer classes for different output formats
-enum class test_status_t {
-    NOT_SUPPORTED,
-    OK,
-    FAIL
-};
+enum class test_status_t { NOT_SUPPORTED, OK, FAIL };
 
 struct test_operation_info {
-    std::string op_name;
-    std::string op_params;
-    std::string backend_name;
+    std::string   op_name;
+    std::string   op_params;
+    std::string   backend_name;
     test_status_t status = test_status_t::OK;
-    std::string failure_reason;
+    std::string   failure_reason;
 
     // Additional information fields that were previously in separate structs
     std::string error_component;
     std::string error_details;
 
     // Gradient info
-    int64_t gradient_index = -1;
+    int64_t     gradient_index = -1;
     std::string gradient_param_name;
-    float gradient_value = 0.0f;
+    float       gradient_value = 0.0f;
 
     // MAA error info
-    double maa_error = 0.0;
+    double maa_error     = 0.0;
     double maa_threshold = 0.0;
 
     // Flags for different types of information
-    bool has_error = false;
-    bool has_gradient_info = false;
-    bool has_maa_error = false;
-    bool is_compare_failure = false;
+    bool has_error            = false;
+    bool has_gradient_info    = false;
+    bool has_maa_error        = false;
+    bool is_compare_failure   = false;
     bool is_large_tensor_skip = false;
 
     test_operation_info() = default;
-    test_operation_info(const std::string& op_name, const std::string& op_params, const std::string& backend_name,
-                       test_status_t status = test_status_t::OK, const std::string& failure_reason = "")
-        : op_name(op_name), op_params(op_params), backend_name(backend_name), status(status), failure_reason(failure_reason) {}
+
+    test_operation_info(const std::string & op_name, const std::string & op_params, const std::string & backend_name,
+                        test_status_t status = test_status_t::OK, const std::string & failure_reason = "") :
+        op_name(op_name),
+        op_params(op_params),
+        backend_name(backend_name),
+        status(status),
+        failure_reason(failure_reason) {}
 
     // Set error information
-    void set_error(const std::string& component, const std::string& details) {
-        has_error = true;
+    void set_error(const std::string & component, const std::string & details) {
+        has_error       = true;
         error_component = component;
-        error_details = details;
+        error_details   = details;
         if (status == test_status_t::OK) {
             status = test_status_t::FAIL;
         }
     }
 
     // Set gradient information
-    void set_gradient_info(int64_t index, const std::string& param_name, float value) {
-        has_gradient_info = true;
-        gradient_index = index;
+    void set_gradient_info(int64_t index, const std::string & param_name, float value) {
+        has_gradient_info   = true;
+        gradient_index      = index;
         gradient_param_name = param_name;
-        gradient_value = value;
+        gradient_value      = value;
         if (status == test_status_t::OK) {
             status = test_status_t::FAIL;
         }
@@ -505,7 +512,7 @@ struct test_operation_info {
     // Set MAA error information
     void set_maa_error(double error, double threshold) {
         has_maa_error = true;
-        maa_error = error;
+        maa_error     = error;
         maa_threshold = threshold;
         if (status == test_status_t::OK) {
             status = test_status_t::FAIL;
@@ -521,78 +528,102 @@ struct test_operation_info {
     }
 
     // Set large tensor skip
-    void set_large_tensor_skip() {
-        is_large_tensor_skip = true;
-    }
+    void set_large_tensor_skip() { is_large_tensor_skip = true; }
 };
 
 struct test_summary_info {
     size_t tests_passed;
     size_t tests_total;
-    bool is_backend_summary = false; // true for backend summary, false for test summary
+    bool   is_backend_summary = false;  // true for backend summary, false for test summary
 
     test_summary_info() = default;
-    test_summary_info(size_t tests_passed, size_t tests_total, bool is_backend_summary = false)
-        : tests_passed(tests_passed), tests_total(tests_total), is_backend_summary(is_backend_summary) {}
+
+    test_summary_info(size_t tests_passed, size_t tests_total, bool is_backend_summary = false) :
+        tests_passed(tests_passed),
+        tests_total(tests_total),
+        is_backend_summary(is_backend_summary) {}
 };
 
 struct testing_start_info {
     size_t device_count;
 
     testing_start_info() = default;
+
     testing_start_info(size_t device_count) : device_count(device_count) {}
 };
 
 struct backend_init_info {
-    size_t device_index;
-    size_t total_devices;
+    size_t      device_index;
+    size_t      total_devices;
     std::string device_name;
-    bool skipped = false;
+    bool        skipped = false;
     std::string skip_reason;
     std::string description;
-    size_t memory_total_mb = 0;
-    size_t memory_free_mb = 0;
-    bool has_memory_info = false;
+    size_t      memory_total_mb = 0;
+    size_t      memory_free_mb  = 0;
+    bool        has_memory_info = false;
 
     backend_init_info() = default;
-    backend_init_info(size_t device_index, size_t total_devices, const std::string& device_name, bool skipped = false,
-                      const std::string& skip_reason = "", const std::string& description = "",
-                      size_t memory_total_mb = 0, size_t memory_free_mb = 0, bool has_memory_info = false)
-        : device_index(device_index), total_devices(total_devices), device_name(device_name), skipped(skipped),
-          skip_reason(skip_reason), description(description), memory_total_mb(memory_total_mb),
-          memory_free_mb(memory_free_mb), has_memory_info(has_memory_info) {}
+
+    backend_init_info(size_t device_index, size_t total_devices, const std::string & device_name, bool skipped = false,
+                      const std::string & skip_reason = "", const std::string & description = "",
+                      size_t memory_total_mb = 0, size_t memory_free_mb = 0, bool has_memory_info = false) :
+        device_index(device_index),
+        total_devices(total_devices),
+        device_name(device_name),
+        skipped(skipped),
+        skip_reason(skip_reason),
+        description(description),
+        memory_total_mb(memory_total_mb),
+        memory_free_mb(memory_free_mb),
+        has_memory_info(has_memory_info) {}
 };
 
 struct backend_status_info {
-    std::string backend_name;
+    std::string   backend_name;
     test_status_t status;
 
     backend_status_info() = default;
-    backend_status_info(const std::string& backend_name, test_status_t status)
-        : backend_name(backend_name), status(status) {}
+
+    backend_status_info(const std::string & backend_name, test_status_t status) :
+        backend_name(backend_name),
+        status(status) {}
 };
 
 struct overall_summary_info {
     size_t backends_passed;
     size_t backends_total;
-    bool all_passed;
+    bool   all_passed;
 
     overall_summary_info() = default;
-    overall_summary_info(size_t backends_passed, size_t backends_total, bool all_passed)
-        : backends_passed(backends_passed), backends_total(backends_total), all_passed(all_passed) {}
+
+    overall_summary_info(size_t backends_passed, size_t backends_total, bool all_passed) :
+        backends_passed(backends_passed),
+        backends_total(backends_total),
+        all_passed(all_passed) {}
 };
 
 struct printer {
     virtual ~printer() {}
+
     FILE * fout = stdout;
+
     virtual void print_header() {}
+
     virtual void print_test_result(const test_result & result) = 0;
+
     virtual void print_footer() {}
+
     virtual void print_operation(const test_operation_info & info) { (void) info; }
+
     virtual void print_summary(const test_summary_info & info) { (void) info; }
+
     virtual void print_testing_start(const testing_start_info & info) { (void) info; }
+
     virtual void print_backend_init(const backend_init_info & info) { (void) info; }
+
     virtual void print_backend_status(const backend_status_info & info) { (void) info; }
+
     virtual void print_overall_summary(const overall_summary_info & info) { (void) info; }
 };
 
@@ -605,7 +636,7 @@ struct console_printer : public printer {
         }
     }
 
-    void print_operation(const test_operation_info& info) override {
+    void print_operation(const test_operation_info & info) override {
         printf("  %s(%s): ", info.op_name.c_str(), info.op_params.c_str());
         fflush(stdout);
 
@@ -638,8 +669,8 @@ struct console_printer : public printer {
 
         // Handle gradient info
         if (info.has_gradient_info) {
-            printf("[%s] nonfinite gradient at index %" PRId64 " (%s=%f) ",
-                   info.op_name.c_str(), info.gradient_index, info.gradient_param_name.c_str(), info.gradient_value);
+            printf("[%s] nonfinite gradient at index %" PRId64 " (%s=%f) ", info.op_name.c_str(), info.gradient_index,
+                   info.gradient_param_name.c_str(), info.gradient_value);
         }
 
         // Handle MAA error
@@ -660,7 +691,7 @@ struct console_printer : public printer {
         }
     }
 
-    void print_summary(const test_summary_info& info) override {
+    void print_summary(const test_summary_info & info) override {
         if (info.is_backend_summary) {
             printf("%zu/%zu backends passed\n", info.tests_passed, info.tests_total);
         } else {
@@ -668,7 +699,7 @@ struct console_printer : public printer {
         }
     }
 
-    void print_backend_status(const backend_status_info& info) override {
+    void print_backend_status(const backend_status_info & info) override {
         printf("  Backend %s: ", info.backend_name.c_str());
         if (info.status == test_status_t::OK) {
             printf("\033[1;32mOK\033[0m\n");
@@ -677,11 +708,11 @@ struct console_printer : public printer {
         }
     }
 
-    void print_testing_start(const testing_start_info& info) override {
+    void print_testing_start(const testing_start_info & info) override {
         printf("Testing %zu devices\n\n", info.device_count);
     }
 
-    void print_backend_init(const backend_init_info& info) override {
+    void print_backend_init(const backend_init_info & info) override {
         printf("Backend %zu/%zu: %s\n", info.device_index + 1, info.total_devices, info.device_name.c_str());
 
         if (info.skipped) {
@@ -700,7 +731,7 @@ struct console_printer : public printer {
         printf("\n");
     }
 
-    void print_overall_summary(const overall_summary_info& info) override {
+    void print_overall_summary(const overall_summary_info & info) override {
         printf("%zu/%zu backends passed\n", info.backends_passed, info.backends_total);
         if (info.all_passed) {
             printf("\033[1;32mOK\033[0m\n");
@@ -709,7 +740,7 @@ struct console_printer : public printer {
         }
     }
 
-private:
+  private:
     void print_test_console(const test_result & result) {
         printf("  %s(%s): ", result.op_name.c_str(), result.op_params.c_str());
         fflush(stdout);
@@ -738,15 +769,13 @@ private:
 
         // align while also leaving some margin for variations in parameters
         int align = 8;
-        int last = (len + align - 1) / align * align;
+        int last  = (len + align - 1) / align * align;
         if (last - len < 5) {
             last += align;
         }
         printf("%*s", last - len, "");
 
-        printf("    %8d runs - %8.2f us/run - ",
-            result.n_runs,
-            result.time_us);
+        printf("    %8d runs - %8.2f us/run - ", result.n_runs, result.time_us);
 
         if (result.flops > 0) {
             auto format_flops = [](double flops) -> std::string {
@@ -763,13 +792,10 @@ private:
                 return buf;
             };
             uint64_t op_flops_per_run = result.flops * result.time_us / 1e6;
-            printf("%s/run - \033[1;34m%sS\033[0m",
-                format_flops(op_flops_per_run).c_str(),
-                format_flops(result.flops).c_str());
+            printf("%s/run - \033[1;34m%sS\033[0m", format_flops(op_flops_per_run).c_str(),
+                   format_flops(result.flops).c_str());
         } else {
-            printf("%8zu kB/run - \033[1;34m%7.2f GB/s\033[0m",
-                result.memory_kb,
-                result.bandwidth_gb_s);
+            printf("%8zu kB/run - \033[1;34m%7.2f GB/s\033[0m", result.memory_kb, result.bandwidth_gb_s);
         }
         printf("\n");
     }
@@ -942,7 +968,7 @@ struct test_case {
         return t;
     }
 
-    bool eval(ggml_backend_t backend1, ggml_backend_t backend2, const char * op_name, printer * output_printer = nullptr) {
+    bool eval(ggml_backend_t backend1, ggml_backend_t backend2, const char * op_name, printer * output_printer) {
         mode = MODE_TEST;
 
         ggml_init_params params = {
@@ -1095,10 +1121,10 @@ struct test_case {
         ggml_free(ctx);
 
         // Create test result
-        bool test_passed = ud.ok && cmp_ok;
-        std::string error_msg = test_passed ? "" : (!cmp_ok ? "compare failed" : "test failed");
-        test_result result(ggml_backend_name(backend1), current_op_name, vars(), "test",
-                         supported, test_passed, error_msg);
+        bool        test_passed = ud.ok && cmp_ok;
+        std::string error_msg   = test_passed ? "" : (!cmp_ok ? "compare failed" : "test failed");
+        test_result result(ggml_backend_name(backend1), current_op_name, vars(), "test", supported, test_passed,
+                           error_msg);
 
         if (output_printer) {
             output_printer->print_test_result(result);
@@ -1107,7 +1133,7 @@ struct test_case {
         return test_passed;
     }
 
-    bool eval_perf(ggml_backend_t backend, const char * op_name, printer * output_printer = nullptr) {
+    bool eval_perf(ggml_backend_t backend, const char * op_name, printer * output_printer) {
         mode = MODE_PERF;
 
         static const size_t graph_nodes = 8192;
@@ -1120,8 +1146,8 @@ struct test_case {
         ggml_context_ptr ctx(ggml_init(params)); // smart ptr
         GGML_ASSERT(ctx);
 
-        ggml_tensor * out = build_graph(ctx.get());
-        std::string current_op_name = op_desc(out);
+        ggml_tensor * out             = build_graph(ctx.get());
+        std::string   current_op_name = op_desc(out);
         if (op_name != nullptr && current_op_name != op_name) {
             //printf("  %s: skipping\n", op_desc(out).c_str());
             return true;
@@ -1130,8 +1156,8 @@ struct test_case {
         // check if backends support op
         if (!ggml_backend_supports_op(backend, out)) {
             // Create test result for unsupported performance test
-            test_result result(ggml_backend_name(backend), current_op_name, vars(), "perf",
-                             false, false, "not supported");
+            test_result result(ggml_backend_name(backend), current_op_name, vars(), "perf", false, false,
+                               "not supported");
 
             if (output_printer) {
                 output_printer->print_test_result(result);
@@ -1224,14 +1250,14 @@ struct test_case {
         } while (total_time_us < 1000*1000); // run for at least 1 second
 
         // Create test result
-        double avg_time_us = (double)total_time_us / total_runs;
+        double avg_time_us      = (double) total_time_us / total_runs;
         double calculated_flops = (op_flops(out) > 0) ? (op_flops(out) * total_runs) / (total_time_us / 1e6) : 0.0;
-        double calculated_bandwidth = (op_flops(out) == 0) ? total_mem / (total_time_us / 1e6) / 1024.0 / 1024.0 / 1024.0 : 0.0;
+        double calculated_bandwidth =
+            (op_flops(out) == 0) ? total_mem / (total_time_us / 1e6) / 1024.0 / 1024.0 / 1024.0 : 0.0;
         size_t calculated_memory_kb = op_size(out) / 1024;
 
-        test_result result(ggml_backend_name(backend), current_op_name, vars(), "perf",
-                         true, true, "", avg_time_us, calculated_flops, calculated_bandwidth,
-                         calculated_memory_kb, total_runs);
+        test_result result(ggml_backend_name(backend), current_op_name, vars(), "perf", true, true, "", avg_time_us,
+                           calculated_flops, calculated_bandwidth, calculated_memory_kb, total_runs);
 
         if (output_printer) {
             output_printer->print_test_result(result);
@@ -1240,7 +1266,7 @@ struct test_case {
         return true;
     }
 
-    bool eval_grad(ggml_backend_t backend, const char * op_name, printer * output_printer = nullptr) {
+    bool eval_grad(ggml_backend_t backend, const char * op_name, printer * output_printer) {
         mode = MODE_GRAD;
         const std::vector<float> expect = grad_expect();
 
@@ -1262,7 +1288,9 @@ struct test_case {
         }
 
         if (out->type != GGML_TYPE_F32) {
-            output_printer->print_operation(test_operation_info(op_desc(out), vars(), ggml_backend_name(backend), test_status_t::NOT_SUPPORTED, out->name + std::string("->type != FP32")));
+            output_printer->print_operation(test_operation_info(op_desc(out), vars(), ggml_backend_name(backend),
+                                                                test_status_t::NOT_SUPPORTED,
+                                                                out->name + std::string("->type != FP32")));
             return true;
         }
 
@@ -1270,32 +1298,33 @@ struct test_case {
         output_printer->print_operation(test_operation_info(op_desc(out), vars(), ggml_backend_name(backend)));
 
         // check if the backend supports the ops
-        bool supported = true;
-        bool any_params = false;
+        bool        supported  = true;
+        bool        any_params = false;
         std::string failure_reason;
 
         for (ggml_tensor * t = ggml_get_first_tensor(ctx.get()); t != NULL; t = ggml_get_next_tensor(ctx.get(), t)) {
             if (!ggml_backend_supports_op(backend, t)) {
-                supported = false;
+                supported      = false;
                 failure_reason = ggml_backend_name(backend);
                 break;
             }
             if ((t->flags & GGML_TENSOR_FLAG_PARAM)) {
                 any_params = true;
                 if (t->type != GGML_TYPE_F32) {
-                    supported = false;
+                    supported      = false;
                     failure_reason = std::string(t->name) + "->type != FP32";
                     break;
                 }
             }
         }
         if (!any_params) {
-            supported = false;
+            supported      = false;
             failure_reason = op_desc(out);
         }
 
         if (!supported) {
-            output_printer->print_operation(test_operation_info(op_desc(out), vars(), ggml_backend_name(backend), test_status_t::NOT_SUPPORTED, failure_reason));
+            output_printer->print_operation(test_operation_info(op_desc(out), vars(), ggml_backend_name(backend),
+                                                                test_status_t::NOT_SUPPORTED, failure_reason));
             return true;
         }
 
@@ -1331,12 +1360,16 @@ struct test_case {
 
         for (ggml_tensor * t = ggml_get_first_tensor(ctx.get()); t != NULL; t = ggml_get_next_tensor(ctx.get(), t)) {
             if (!ggml_backend_supports_op(backend, t)) {
-                output_printer->print_operation(test_operation_info(op_desc(out), vars(), ggml_backend_name(backend), test_status_t::NOT_SUPPORTED, ggml_backend_name(backend)));
+                output_printer->print_operation(test_operation_info(op_desc(out), vars(), ggml_backend_name(backend),
+                                                                    test_status_t::NOT_SUPPORTED,
+                                                                    ggml_backend_name(backend)));
                 supported = false;
                 break;
             }
             if ((t->flags & GGML_TENSOR_FLAG_PARAM) && t->type != GGML_TYPE_F32) {
-                output_printer->print_operation(test_operation_info(op_desc(out), vars(), ggml_backend_name(backend), test_status_t::NOT_SUPPORTED, std::string(t->name) + "->type != FP32"));
+                output_printer->print_operation(test_operation_info(op_desc(out), vars(), ggml_backend_name(backend),
+                                                                    test_status_t::NOT_SUPPORTED,
+                                                                    std::string(t->name) + "->type != FP32"));
                 supported = false;
                 break;
             }
@@ -5488,7 +5521,8 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_perf() {
     return test_cases;
 }
 
-static bool test_backend(ggml_backend_t backend, test_mode mode, const char * op_name, const char * params_filter, printer * output_printer = nullptr) {
+static bool test_backend(ggml_backend_t backend, test_mode mode, const char * op_name, const char * params_filter,
+                         printer * output_printer) {
     auto filter_test_cases = [](std::vector<std::unique_ptr<test_case>> & test_cases, const char * params_filter) {
         if (params_filter == nullptr) {
             return;
@@ -5634,13 +5668,15 @@ int main(int argc, char ** argv) {
         ggml_backend_dev_t dev = ggml_backend_dev_get(i);
 
         if (backend_filter != NULL && strcmp(backend_filter, ggml_backend_dev_name(dev)) != 0) {
-            output_printer->print_backend_init(backend_init_info(i, ggml_backend_dev_count(), ggml_backend_dev_name(dev), true, "Skipping"));
+            output_printer->print_backend_init(
+                backend_init_info(i, ggml_backend_dev_count(), ggml_backend_dev_name(dev), true, "Skipping"));
             n_ok++;
             continue;
         }
 
         if (backend_filter == NULL && ggml_backend_dev_type(dev) == GGML_BACKEND_DEVICE_TYPE_CPU && mode != MODE_GRAD) {
-            output_printer->print_backend_init(backend_init_info(i, ggml_backend_dev_count(), ggml_backend_dev_name(dev), true, "Skipping CPU backend"));
+            output_printer->print_backend_init(backend_init_info(
+                i, ggml_backend_dev_count(), ggml_backend_dev_name(dev), true, "Skipping CPU backend"));
             n_ok++;
             continue;
         }
@@ -5655,16 +5691,19 @@ int main(int argc, char ** argv) {
             ggml_backend_set_n_threads_fn(backend, std::thread::hardware_concurrency());
         }
 
-        size_t free, total; // NOLINT
+        size_t free, total;  // NOLINT
         ggml_backend_dev_memory(dev, &free, &total);
-        output_printer->print_backend_init(backend_init_info(i, ggml_backend_dev_count(), ggml_backend_dev_name(dev), false, "", ggml_backend_dev_description(dev), total / 1024 / 1024, free / 1024 / 1024, true));
+        output_printer->print_backend_init(backend_init_info(i, ggml_backend_dev_count(), ggml_backend_dev_name(dev),
+                                                             false, "", ggml_backend_dev_description(dev),
+                                                             total / 1024 / 1024, free / 1024 / 1024, true));
 
         bool ok = test_backend(backend, mode, op_name_filter, params_filter, output_printer.get());
 
         if (ok) {
             n_ok++;
         }
-        output_printer->print_backend_status(backend_status_info(ggml_backend_name(backend), ok ? test_status_t::OK : test_status_t::FAIL));
+        output_printer->print_backend_status(
+            backend_status_info(ggml_backend_name(backend), ok ? test_status_t::OK : test_status_t::FAIL));
 
         ggml_backend_free(backend);
     }
@@ -5675,7 +5714,8 @@ int main(int argc, char ** argv) {
         output_printer->print_footer();
     }
 
-    output_printer->print_overall_summary(overall_summary_info(n_ok, ggml_backend_dev_count(), n_ok == ggml_backend_dev_count()));
+    output_printer->print_overall_summary(
+        overall_summary_info(n_ok, ggml_backend_dev_count(), n_ok == ggml_backend_dev_count()));
 
     if (n_ok != ggml_backend_dev_count()) {
         return 1;
