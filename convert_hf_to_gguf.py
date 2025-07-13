@@ -780,6 +780,9 @@ class TextModel(ModelBase):
         if chkhsh == "877081d19cf6996e2c4ff0e1236341e9b7bde288f5311a56a937f0afbbb3aeb5":
             # ref: https://huggingface.co/deepseek-ai/DeepSeek-V3
             res = "deepseek-v3"
+        if chkhsh == "81212dc7cdb7e0c1074ca62c5aeab0d43c9f52b8a737be7b12a777c953027890":
+            # ref: https://huggingface.co/moonshotai/Kimi-K2-Instruct
+            res = "deepseek-v3"
         if chkhsh == "b3f499bb4255f8ca19fccd664443283318f2fd2414d5e0b040fbdd0cc195d6c5":
             # ref: https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
             res = "deepseek-r1-qwen"
@@ -5562,8 +5565,69 @@ class DeepseekModel(TextModel):
 class DeepseekV2Model(TextModel):
     model_arch = gguf.MODEL_ARCH.DEEPSEEK2
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        print("yeahdongcn: __init__")
+        # For handling tied embeddings
+        self._tok_embd = None
+
+
     def set_vocab(self):
-        self._set_vocab_gpt2()
+        print("yeahdongcn: set_vocab")
+        from transformers import AutoTokenizer
+        tokenizer = AutoTokenizer.from_pretrained(self.dir_model, trust_remote_code=True)
+
+        # 1. Get the pre-tokenizer identifier hash
+        tokpre = self.get_vocab_base_pre(tokenizer)
+
+        # 2. Reverse-engineer the merges list from mergeable_ranks
+        merges = []
+        vocab = {}
+        print(f"yeahdongcn: tokenizer={tokenizer}")
+        # mergeable_ranks = tokenizer.mergeable_ranks
+        # for token, rank in mergeable_ranks.items():
+        #     vocab[QwenModel.token_bytes_to_string(token)] = rank
+        #     if len(token) == 1:
+        #         continue
+        #     merged = QwenModel.bpe(mergeable_ranks, token, max_rank=rank)
+        #     if len(merged) == 2: # todo this is an assert in Qwen, why?
+        #         merges.append(' '.join(map(QwenModel.token_bytes_to_string, merged)))
+        # Hardcoded to make merge not empty
+        merges.append("<|endoftext|> <|endoftext|>")
+
+        # 3. Generate the tokens and toktypes lists
+        vocab_size = self.hparams["vocab_size"]
+        print(f"yeahdongcn: vocab_size={vocab_size}")
+        print(f"yeahdongcn: tokenizer.vocab_size={tokenizer.vocab_size}")
+        # assert tokenizer.vocab_size == vocab_size
+        special_tokens = tokenizer.special_tokens
+        reverse_vocab = {id_ : encoded_tok for encoded_tok, id_ in {**vocab, **special_tokens}.items()}
+        tokens: list[str] = []
+        toktypes: list[int] = []
+        for i in range(vocab_size):
+            if i not in reverse_vocab:
+                tokens.append(f"[PAD{i}]")
+                toktypes.append(gguf.TokenType.UNUSED)
+            else:
+                token = reverse_vocab[i]
+                tokens.append(token)
+                if i in special_tokens.values():
+                    toktypes.append(gguf.TokenType.CONTROL)
+                else:
+                    toktypes.append(gguf.TokenType.NORMAL)
+
+        # 4. Write all vocab-related fields to the GGUF writer
+        self.gguf_writer.add_tokenizer_model("gpt2")
+        self.gguf_writer.add_tokenizer_pre(tokpre)
+        self.gguf_writer.add_token_list(tokens)
+        self.gguf_writer.add_token_types(toktypes)
+        self.gguf_writer.add_token_merges(merges)
+
+        # 5. Add special tokens and chat templates
+        special_vocab = gguf.SpecialVocab(self.dir_model, load_merges=False)
+        special_vocab.add_to_gguf(self.gguf_writer)
+
 
     def set_gguf_parameters(self):
 
@@ -5610,6 +5674,9 @@ class DeepseekV2Model(TextModel):
     _experts: list[dict[str, Tensor]] | None = None
 
     def modify_tensors(self, data_torch: Tensor, name: str, bid: int | None) -> Iterable[tuple[str, Tensor]]:
+        if name == "model.embed_tokens.weight":
+            self._tok_embd = data_torch.clone()
+
         # rename e_score_correction_bias tensors
         if name.endswith("e_score_correction_bias"):
             name = name.replace("e_score_correction_bias", "e_score_correction.bias")
