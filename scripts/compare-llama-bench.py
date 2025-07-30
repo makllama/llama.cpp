@@ -87,7 +87,7 @@ LLAMA_BENCH_PRETTY_NAMES = {
 
 # Header names for the table (test-backend-ops):
 TEST_BACKEND_OPS_PRETTY_NAMES = {
-    "backend_name": "Backend", "op_name": "Operation", "op_params": "Parameters", "test_mode": "Mode",
+    "backend_name": "Backend", "op_name": "GGML op", "op_params": "Op parameters", "test_mode": "Mode",
     "supported": "Supported", "passed": "Passed", "error_message": "Error",
     "flops": "FLOPS", "bandwidth_gb_s": "Bandwidth (GB/s)", "memory_kb": "Memory (KB)", "n_runs": "Runs"
 }
@@ -141,7 +141,8 @@ parser.add_argument("-c", "--compare", help=help_c)
 help_t = (
     "The tool whose data is being compared. "
     "Either 'llama-bench' or 'test-backend-ops'. "
-    "This determines the database schema and comparison logic used."
+    "This determines the database schema and comparison logic used. "
+    "If left unspecified, try to determine from the input file."
 )
 parser.add_argument("-t", "--tool", help=help_t, default=None, choices=[None, "llama-bench", "test-backend-ops"])
 help_i = (
@@ -162,7 +163,8 @@ parser.add_argument("-o", "--output", help=help_o, default="pipe")
 help_s = (
     "Columns to add to the table. "
     "Accepts a comma-separated list of values. "
-    f"Legal values: {', '.join(LLAMA_BENCH_KEY_PROPERTIES[:-3])}. "
+    f"Legal values for test-backend-ops: {', '.join(TEST_BACKEND_OPS_KEY_PROPERTIES)}. "
+    f"Legal values for llama-bench: {', '.join(LLAMA_BENCH_KEY_PROPERTIES[:-3])}. "
     "Defaults to model name (model_type) and CPU and/or GPU name (cpu_info, gpu_info) "
     "plus any column where not all data points are the same. "
     "If the columns are manually specified, then the results for each unique combination of the "
@@ -875,7 +877,8 @@ elif tool == "test-backend-ops":
             # Fallback if no valid data is available
             baseline_str = "N/A"
             compare_str = "N/A"
-            speedup = float('nan')
+            from math import nan
+            speedup = nan
 
         table.append(list(row[:-4]) + [baseline_str, compare_str, speedup])
 else:
